@@ -2,15 +2,24 @@ import { ephemeralMessage, getOption } from '../lib/discord.js';
 import { createFirestoreClient } from '../lib/firestore.js';
 
 const MAX_ROSTER_SIZE = 6;
+const VALID_CARS = [
+  'AE86','FD3S','RPS13','BNR32','CE9A','EG6','SW20','FC3S',
+  'AP1','NA6CE','NA1','GC8F','DC2','JZA80','S14','ZZW30','EA11R','CN9A'
+];
 
 export async function handleAddDriver(interaction, env) {
   const tag = getOption(interaction, 'team_tag').toUpperCase();
   const playerId = getOption(interaction, 'player');
   const displayName = getOption(interaction, 'display_name');
+  const car = (getOption(interaction, 'car') || '').toUpperCase();
   const invokerId = interaction.member.user.id;
 
   if (!displayName || displayName.trim().length === 0 || displayName.length > 32) {
     return ephemeralMessage('Display name must be 1-32 characters.');
+  }
+
+  if (!car || !VALID_CARS.includes(car)) {
+    return ephemeralMessage(`Invalid car. Valid options: ${VALID_CARS.join(', ')}`);
   }
 
   const db = createFirestoreClient(env);
@@ -56,7 +65,7 @@ export async function handleAddDriver(interaction, env) {
   }
 
   // 6. Build new roster
-  const newRoster = [...roster, { name: displayName, role: 'Member', discordId: playerId, car: null }];
+  const newRoster = [...roster, { name: displayName, role: 'Member', discordId: playerId, car }];
 
   // 7. Atomic batch write to teams + standings
   await db.batchWrite([
