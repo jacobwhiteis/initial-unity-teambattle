@@ -30,10 +30,17 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Staff collection — staff can read, admin can write
+    // Staff collection — staff can read, admin can update/delete
+    // Self-creation allowed with a valid, unused invite code (for onboarding)
     match /staff/{userId} {
       allow read: if isStaff();
-      allow write: if isAdmin();
+      allow create: if request.auth != null
+        && userId == request.auth.uid
+        && !exists(/databases/$(database)/documents/staff/$(request.auth.uid))
+        && request.resource.data.inviteCode is string
+        && exists(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode))
+        && get(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode)).data.used == false;
+      allow update, delete: if isAdmin();
     }
 
     // Invites — any authenticated user can read (to redeem), admin can create/delete

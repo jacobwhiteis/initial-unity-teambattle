@@ -61,12 +61,44 @@ function toast(msg, err = false) {
 // Authentication
 // ---------------------------------------------------------------------------
 
+async function checkStaffAccess(user, showInviteOnFail) {
+  try {
+    const staffPromise = getDoc(doc(db, 'staff', user.uid));
+    const timeout = new Promise((_, rej) =>
+      setTimeout(() => rej(new Error('Staff check timed out')), 8000));
+    const staffDoc = await Promise.race([staffPromise, timeout]);
+    if (staffDoc.exists()) {
+      staffRole = staffDoc.data().role || 'moderator';
+      staffUser.textContent = staffDoc.data().discordUsername || user.displayName || 'Staff';
+      loginView.style.display = 'none';
+      dashView.style.display = 'block';
+      if (staffRole === 'admin') {
+        dangerNav.style.display = '';
+        document.getElementById('invitesNav').style.display = '';
+      }
+      initDashboard();
+      return true;
+    }
+  } catch (e) {
+    console.log('Staff check failed (likely not staff):', e.code || e.message);
+  }
+  authLoading.style.display = 'none';
+  loginBtn.disabled = false;
+  if (showInviteOnFail) {
+    authError.style.display = 'block';
+    document.getElementById('redeemInviteBtn').onclick = () => redeemInvite(user);
+  }
+  return false;
+}
+
 loginBtn.addEventListener('click', async () => {
   loginBtn.disabled = true;
   authLoading.style.display = 'block';
   authError.style.display = 'none';
   try {
-    await signInWithPopup(auth, discordProvider);
+    const result = await signInWithPopup(auth, discordProvider);
+    currentUser = result.user;
+    await checkStaffAccess(result.user, true);
   } catch (e) {
     console.error('Login failed:', e);
     toast('Login failed: ' + e.message, true);
@@ -80,38 +112,8 @@ logoutBtn.addEventListener('click', () => signOut(auth));
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     currentUser = user;
-    // Check staff collection
     console.log('Firebase UID:', user.uid, '| Display name:', user.displayName);
-    try {
-      const staffPromise = getDoc(doc(db, 'staff', user.uid));
-      const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('Staff check timed out')), 8000));
-      const staffDoc = await Promise.race([staffPromise, timeout]);
-      if (staffDoc.exists()) {
-        staffRole = staffDoc.data().role || 'moderator';
-        staffUser.textContent = staffDoc.data().discordUsername || user.displayName || 'Staff';
-        loginView.style.display = 'none';
-        dashView.style.display = 'block';
-        // Show admin-only sections
-        if (staffRole === 'admin') {
-          dangerNav.style.display = '';
-          document.getElementById('invitesNav').style.display = '';
-        }
-        initDashboard();
-      } else {
-        // Not authorized — show invite code form
-        authLoading.style.display = 'none';
-        authError.style.display = 'block';
-        loginBtn.disabled = false;
-        document.getElementById('redeemInviteBtn').onclick = () => redeemInvite(user);
-      }
-    } catch (e) {
-      // Permission denied reading staff collection — user is not staff
-      console.log('Staff check failed (likely not staff):', e.code || e.message);
-      authLoading.style.display = 'none';
-      authError.style.display = 'block';
-      loginBtn.disabled = false;
-      document.getElementById('redeemInviteBtn').onclick = () => redeemInvite(user);
-    }
+    await checkStaffAccess(user, false);
   } else {
     currentUser = null;
     staffRole = null;
@@ -839,6 +841,7 @@ async function redeemInvite(user) {
   batch.set(doc(db, 'staff', user.uid), {
     discordUsername: user.displayName || 'Unknown',
     role: invite.role || 'moderator',
+    inviteCode: code,
     addedAt: Timestamp.now(),
     addedBy: 'invite:' + code
   });
