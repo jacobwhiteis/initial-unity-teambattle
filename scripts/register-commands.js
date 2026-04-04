@@ -56,6 +56,31 @@ const commands = [
       ]},
     ],
   },
+  {
+    name: 'view-team',
+    description: "View a team's info, roster, and record",
+    options: [
+      { name: 'team_tag', description: 'Team tag (e.g. MTD, AKG)', type: 3, required: true },
+    ],
+  },
+  {
+    name: 'view-driver',
+    description: "View a driver's team and car",
+    options: [
+      { name: 'player', description: 'Discord user to look up', type: 6, required: true },
+    ],
+  },
+  {
+    name: 'standings',
+    description: 'View the team battle standings',
+  },
+  {
+    name: 'view-team-history',
+    description: "View a team's match history",
+    options: [
+      { name: 'team_tag', description: 'Team tag (e.g. MTD, AKG)', type: 3, required: true },
+    ],
+  },
 ];
 
 async function registerCommands() {

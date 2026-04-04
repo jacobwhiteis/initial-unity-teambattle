@@ -52,25 +52,22 @@ export async function handleAddDriver(interaction, env) {
     return ephemeralMessage(`<@${playerId}> is already on **[${team.tag}] ${team.name}**.`);
   }
 
-  // 5. Cross-team uniqueness check
-  const allTeams = await db.listDocuments('teams');
-  for (const t of allTeams) {
-    if (t.id === teamId) continue;
-    const tRoster = t.roster || [];
-    if (tRoster.some(d => d.discordId === playerId)) {
-      return ephemeralMessage(
-        `<@${playerId}> is already on **[${t.tag}] ${t.name}**. Remove them first.`
-      );
-    }
+  // 5. Cross-team uniqueness check via drivers collection
+  const existingDriver = await db.getDocument('drivers', playerId);
+  if (existingDriver) {
+    return ephemeralMessage(
+      `<@${playerId}> is already on **[${existingDriver.teamTag}] ${existingDriver.teamName}**. Remove them first.`
+    );
   }
 
   // 6. Build new roster
   const newRoster = [...roster, { name: displayName, role: 'Member', discordId: playerId, car }];
 
-  // 7. Atomic batch write to teams + standings
+  // 7. Atomic batch write to teams + standings + drivers
   await db.batchWrite([
     db.buildUpdate('teams', teamId, { roster: newRoster }),
     db.buildUpdate('standings', teamId, { roster: newRoster }),
+    db.buildUpdate('drivers', playerId, { name: displayName, car, teamId, teamTag: team.tag, teamName: team.name }),
   ]);
 
   return ephemeralMessage(
