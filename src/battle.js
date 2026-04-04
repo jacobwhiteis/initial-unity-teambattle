@@ -272,7 +272,7 @@ async function addMapsForRound(round) {
         mapsMsg += `\nMap ${3 + i}: **${pickMap?.name}** (Pick)`;
       });
       postToDiscord(threadId, mapsMsg);
-      postToDiscord(threadId, '🏁 **Time to race!**');
+      postToDiscord(threadId, `🏁 **Time to race!** First up: **${homeAMap?.name}** (Map 1)`);
     }
   } catch (e) {
     console.error('Failed to add maps for round:', e);
@@ -304,7 +304,7 @@ async function addDeciderMap() {
 
     const threadId = matchData.discordThreadId || null;
     postToDiscord(threadId, `🗺️ **Decider Map:** Map ${updatedResults.length}: **${deciderMap?.name}**`);
-    postToDiscord(threadId, '🏁 **Time to race!**');
+    postToDiscord(threadId, `🏁 **Time to race!** Decider: **${deciderMap?.name}** (Map ${updatedResults.length})`);
   } catch (e) {
     console.error('Failed to add decider map:', e);
   }
@@ -522,6 +522,18 @@ async function recordRaceResult(mapIdx, raceType, teamId) {
 
     // Check if we need to resume ban/pick for more maps
     checkBanpickResumption(liveScore, results);
+
+    // If there's a next map ready to race (no winner yet, no ban/pick resumption), announce it
+    const format = matchData.format || 'BO3';
+    const threshold = format === 'BO5' ? 3 : 2;
+    const hasWinner = liveScore.teamA >= threshold || liveScore.teamB >= threshold;
+    if (!hasWinner) {
+      const nextIdx = results.findIndex(m => !m.mapWinner);
+      if (nextIdx !== -1) {
+        const nextMap = results[nextIdx];
+        postToDiscord(threadId, `🏁 **Next up: ${nextMap.mapName}** (Map ${nextIdx + 1})`);
+      }
+    }
   }
 }
 
