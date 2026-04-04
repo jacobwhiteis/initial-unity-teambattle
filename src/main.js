@@ -156,6 +156,7 @@ function toggleExpand(tbody, tr, expTr, team, mode) {
       driverHtml += `<div class="driver-row">
         <span class="role-pill ${rc}">${d.role || 'Member'}</span>
         <span>${d.name}</span>
+        ${d.car ? `<span style="color:var(--text-mute);font-size:.82rem;margin-left:.25rem;">· ${d.car}</span>` : ''}
       </div>`;
     });
   } else {
