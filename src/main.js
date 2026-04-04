@@ -1,5 +1,5 @@
 import './nav.js';
-import { db, collection, getDocs, query, orderBy, limit, onSnapshot } from './firebase.js';
+import { db, collection, query, orderBy, limit, where, onSnapshot } from './firebase.js';
 import { getTier, getRules } from './crp.js';
 
 // ---------------------------------------------------------------------------
@@ -156,7 +156,7 @@ function toggleExpand(tbody, tr, expTr, team, mode) {
       driverHtml += `<div class="driver-row">
         <span class="role-pill ${rc}">${d.role || 'Member'}</span>
         <span>${d.name}</span>
-        ${d.car ? `<span style="color:var(--text-mute);font-size:.82rem;margin-left:.25rem;">· ${d.car}</span>` : ''}
+        ${d.car ? `<span style="color:var(--text-mute);font-size:.82rem;margin-left:.25rem;">\u00b7 ${d.car}</span>` : ''}
       </div>`;
     });
   } else {
@@ -205,17 +205,74 @@ onSnapshot(standingsQuery, (snapshot) => {
 });
 
 // ---------------------------------------------------------------------------
+// Live Battles
+// ---------------------------------------------------------------------------
+
+const liveBattlesSection = document.getElementById('liveBattlesSection');
+const liveBattlesContainer = document.getElementById('liveBattlesContainer');
+
+const liveQuery = query(
+  collection(db, 'matches'),
+  where('status', 'in', ['banpick', 'in_progress']),
+  orderBy('createdAt', 'desc')
+);
+
+onSnapshot(liveQuery, (snapshot) => {
+  const matches = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+  if (matches.length === 0) {
+    liveBattlesSection.style.display = 'none';
+    return;
+  }
+
+  liveBattlesSection.style.display = '';
+  liveBattlesContainer.innerHTML = '';
+
+  matches.forEach(match => {
+    const card = document.createElement('div');
+    card.className = 'match-card live-match-card';
+
+    const scoreA = match.liveScore?.teamA ?? match.score?.teamA ?? 0;
+    const scoreB = match.liveScore?.teamB ?? match.score?.teamB ?? 0;
+    const tagA = match.teamATag ? ` [${match.teamATag}]` : '';
+    const tagB = match.teamBTag ? ` [${match.teamBTag}]` : '';
+
+    const isLive = match.status === 'in_progress';
+    const statusPill = isLive
+      ? '<span class="status-pill status-live"><span class="pulse-dot"></span>LIVE</span>'
+      : '<span class="status-pill status-banpick">BAN/PICK</span>';
+
+    card.innerHTML = `
+      <div class="match-teams">
+        <span class="match-team">${match.teamAName}${tagA}</span>
+        <span class="match-score">${scoreA} \u2014 ${scoreB}</span>
+        <span class="match-team">${match.teamBName}${tagB}</span>
+      </div>
+      <div class="match-meta">
+        ${statusPill}
+      </div>
+    `;
+
+    card.addEventListener('click', () => {
+      window.location.href = `/battle?id=${match.id}`;
+    });
+
+    liveBattlesContainer.appendChild(card);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Recent Matches
 // ---------------------------------------------------------------------------
 
-async function loadRecentMatches() {
-  const matchesQuery = query(
-    collection(db, 'matches'),
-    orderBy('date', 'desc'),
-    limit(10)
-  );
+const recentQuery = query(
+  collection(db, 'matches'),
+  where('status', '==', 'completed'),
+  orderBy('date', 'desc'),
+  limit(10)
+);
 
-  const snapshot = await getDocs(matchesQuery);
+onSnapshot(recentQuery, (snapshot) => {
   const matches = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
   if (matches.length === 0) {
@@ -258,6 +315,4 @@ async function loadRecentMatches() {
 
     matchesContainer.appendChild(card);
   });
-}
-
-loadRecentMatches();
+});

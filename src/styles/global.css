@@ -866,6 +866,51 @@ tr.expand-row td {
 }
 
 /* ============================================
+   LIVE BATTLES
+   ============================================ */
+.live-match-card {
+    border-color: rgba(255, 85, 32, .3);
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-family: var(--font-label);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.status-live {
+    background: rgba(60, 179, 113, .15);
+    border: 1px solid rgba(60, 179, 113, .4);
+    color: var(--win);
+}
+
+.status-banpick {
+    background: rgba(255, 85, 32, .12);
+    border: 1px solid var(--gold-dim);
+    color: var(--accent);
+}
+
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--win);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .3; }
+}
+
+/* ============================================
    SECTION HEADERS
    ============================================ */
 .section-header {
