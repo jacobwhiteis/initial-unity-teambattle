@@ -69,7 +69,17 @@ async function checkStaffAccess(user, showInviteOnFail) {
     const staffDoc = await Promise.race([staffPromise, timeout]);
     if (staffDoc.exists()) {
       staffRole = staffDoc.data().role || 'moderator';
-      staffUser.textContent = staffDoc.data().discordUsername || user.displayName || 'Staff';
+      let displayName = staffDoc.data().discordUsername;
+      // Auto-fix "Unknown" display names from Discord provider data
+      if (!displayName || displayName === 'Unknown') {
+        const providerName = user.providerData?.find(p => p.providerId === 'oidc.discord')?.displayName
+          || discordUsername || user.displayName;
+        if (providerName && providerName !== 'Unknown') {
+          displayName = providerName;
+          updateDoc(doc(db, 'staff', user.uid), { discordUsername: providerName }).catch(() => {});
+        }
+      }
+      staffUser.textContent = displayName || user.displayName || 'Staff';
       loginView.style.display = 'none';
       dashView.style.display = 'block';
       if (staffRole === 'admin') {
@@ -257,8 +267,8 @@ function refreshDriverList() {
   if (!el) return;
   const allDrivers = [];
   teamsCache.forEach(t => {
-    (t.roster || []).forEach(d => {
-      allDrivers.push({ ...d, teamName: t.name, teamTag: t.tag, teamId: t.id });
+    (t.roster || []).forEach((d, idx) => {
+      allDrivers.push({ ...d, teamName: t.name, teamTag: t.tag, teamId: t.id, rosterIdx: idx });
     });
   });
   if (!allDrivers.length) {
@@ -266,16 +276,42 @@ function refreshDriverList() {
     return;
   }
   allDrivers.sort((a, b) => a.name.localeCompare(b.name));
-  el.innerHTML = allDrivers.map(d => {
+  el.innerHTML = allDrivers.map((d, i) => {
     const roleTag = d.role === 'Leader' ? ' ★' : d.role === 'Co-Leader' ? ' ☆' : '';
-    return `<div class="mod-list-item">
+    return `<div class="mod-list-item" style="flex-wrap:wrap;gap:.5rem;">
       <span class="ml-name">${d.name}${roleTag}</span>
-      <span class="ml-info">${d.car || '—'}</span>
       <span class="tag-badge" style="font-size:.65rem;">${d.teamTag}</span>
-      <span style="color:var(--text-mute);font-size:.75rem;">${d.teamName}</span>
+      <select class="dl-car" data-dl-idx="${i}" style="width:110px;padding:.3rem .5rem;font-size:.85rem;">
+        ${carOptions(d.car)}
+      </select>
+      <button class="btn btn-primary btn-sm dl-save-car" data-dl-idx="${i}">Save</button>
       ${d.discordId ? `<span style="color:var(--text-mute);font-size:.7rem;margin-left:auto;">${d.discordId}</span>` : ''}
     </div>`;
   }).join('');
+
+  // Store driver refs for save handlers
+  el._drivers = allDrivers;
+
+  el.querySelectorAll('.dl-save-car').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const idx = parseInt(btn.dataset.dlIdx);
+      const d = allDrivers[idx];
+      const newCar = el.querySelector(`.dl-car[data-dl-idx="${idx}"]`).value || null;
+      const t = teamsCache.find(x => x.id === d.teamId);
+      if (!t) return;
+      const newRoster = [...(t.roster || [])];
+      newRoster[d.rosterIdx] = { ...newRoster[d.rosterIdx], car: newCar };
+      try {
+        const batch = writeBatch(db);
+        batch.update(doc(db, 'teams', d.teamId), { roster: newRoster });
+        batch.update(doc(db, 'standings', d.teamId), { roster: newRoster });
+        await batch.commit();
+        toast(`Updated ${d.name}'s car to ${newCar || 'none'}`);
+      } catch (e) {
+        toast('Failed to update car: ' + e.message, true);
+      }
+    });
+  });
 }
 
 // ---------------------------------------------------------------------------

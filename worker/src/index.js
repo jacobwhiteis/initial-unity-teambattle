@@ -1,6 +1,7 @@
 import { verifyDiscordRequest, jsonResponse, ephemeralMessage } from './lib/discord.js';
 import { handleAddDriver } from './handlers/add-driver.js';
 import { handleRemoveDriver } from './handlers/remove-driver.js';
+import { handleChangeCar } from './handlers/change-car.js';
 
 export default {
   async fetch(request, env) {
@@ -25,6 +26,7 @@ export default {
       try {
         if (name === 'add-team-driver') return await handleAddDriver(interaction, env);
         if (name === 'remove-team-driver') return await handleRemoveDriver(interaction, env);
+        if (name === 'change-car') return await handleChangeCar(interaction, env);
       } catch (err) {
         console.error(`Error handling /${name}:`, err);
         return ephemeralMessage('Something went wrong. Please try again.');
