@@ -86,7 +86,7 @@ async function loadMatch() {
   if (mapResults.length > 0) {
     html += '<h3 class="section-header">Map Breakdown</h3>';
 
-    mapResults.forEach((map, i) => {
+    mapResults.filter(m => m.mapWinner != null).forEach((map, i) => {
       const mapWinnerId = map.mapWinner;
       const mapWinnerName = mapWinnerId === match.teamA ? match.teamAName : mapWinnerId === match.teamB ? match.teamBName : '—';
       const mapWinnerSide = mapWinnerId === match.teamA ? 'team-a' : 'team-b';

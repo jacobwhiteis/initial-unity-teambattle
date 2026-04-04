@@ -353,13 +353,15 @@ function renderMapCards() {
   const activeIdx = results.findIndex(m => !m.mapWinner);
 
   container.innerHTML = results.map((map, i) => {
+    // Hide unplayed maps (no winner) on completed matches
+    if (isCompleted && !map.mapWinner) return '';
     // Progressive reveal: hide maps that shouldn't be shown yet
     // BO3: hide decider until score is 1-1
-    if (format === 'BO3' && map.type === 'decider' && score.teamA < 1 && score.teamB < 1 && !isCompleted) return '';
+    if (format === 'BO3' && map.type === 'decider' && score.teamA < 1 && score.teamB < 1) return '';
     // BO5: hide map 4 (index 3) until map 3 has a winner (avoid spoiling picks)
-    if (format === 'BO5' && i === 3 && results[2] && !results[2].mapWinner && !isCompleted) return '';
+    if (format === 'BO5' && i === 3 && results[2] && !results[2].mapWinner) return '';
     // BO5: hide decider until score is 2-2
-    if (format === 'BO5' && map.type === 'decider' && (score.teamA < 2 || score.teamB < 2) && !isCompleted) return '';
+    if (format === 'BO5' && map.type === 'decider' && (score.teamA < 2 || score.teamB < 2)) return '';
 
     const isActive = i === activeIdx && !isCompleted;
     const isDone = map.mapWinner !== null;
