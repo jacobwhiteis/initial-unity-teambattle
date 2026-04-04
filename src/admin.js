@@ -83,7 +83,9 @@ onAuthStateChanged(auth, async (user) => {
     // Check staff collection
     console.log('Firebase UID:', user.uid, '| Display name:', user.displayName);
     try {
-      const staffDoc = await getDoc(doc(db, 'staff', user.uid));
+      const staffPromise = getDoc(doc(db, 'staff', user.uid));
+      const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('Staff check timed out')), 8000));
+      const staffDoc = await Promise.race([staffPromise, timeout]);
       if (staffDoc.exists()) {
         staffRole = staffDoc.data().role || 'moderator';
         staffUser.textContent = staffDoc.data().discordUsername || user.displayName || 'Staff';
