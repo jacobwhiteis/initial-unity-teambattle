@@ -197,6 +197,9 @@ function initDashboard() {
   document.getElementById('saveWebhookBtn').addEventListener('click', saveWebhook);
   loadWebhookConfig();
 
+  // CRP override (admin only)
+  document.getElementById('setCrpBtn').addEventListener('click', setCrpOverride);
+
   // Danger zone
   delTeamBtn.addEventListener('click', deleteTeamAction);
   delMatchBtn.addEventListener('click', deleteMatchAction);
@@ -379,6 +382,16 @@ function openTeamEditor(teamId) {
   document.getElementById('t-active').checked = team.active !== false;
   document.getElementById('t-editing').value = teamId;
 
+  // Show CRP override for admins
+  const crpGroup = document.getElementById('t-crp-group');
+  if (staffRole === 'admin') {
+    const standing = standingsCache.find(s => s.id === teamId);
+    document.getElementById('t-crp').value = standing?.crp ?? 0;
+    crpGroup.style.display = '';
+  } else {
+    crpGroup.style.display = 'none';
+  }
+
   // Switch to teams section
   document.querySelectorAll('.mod-section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.mod-nav').forEach(b => b.classList.remove('active'));
@@ -554,7 +567,22 @@ function clearTeamForm() {
   document.getElementById('t-captain').value = '';
   document.getElementById('t-active').checked = true;
   document.getElementById('t-editing').value = '';
+  document.getElementById('t-crp-group').style.display = 'none';
   document.getElementById('driver-manager').style.display = 'none';
+}
+
+async function setCrpOverride() {
+  if (staffRole !== 'admin') { toast('Admin access required', true); return; }
+  const teamId = document.getElementById('t-editing').value;
+  if (!teamId) { toast('Select a team to edit first', true); return; }
+  const crp = parseInt(document.getElementById('t-crp').value);
+  if (isNaN(crp) || crp < 0) { toast('Enter a valid CRP value', true); return; }
+  try {
+    await updateDoc(doc(db, 'standings', teamId), { crp });
+    toast(`CRP set to ${crp}`);
+  } catch (e) {
+    toast('Failed to set CRP: ' + e.message, true);
+  }
 }
 
 async function saveTeam() {
