@@ -234,7 +234,8 @@ async function loadRecentMatches() {
       ? match.date.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
       : '';
 
-    const mapNames = match.maps?.map(m => m.mapName).join(', ') || '';
+    const mapList = match.mapResults?.length ? match.mapResults : match.maps || [];
+    const mapNames = mapList.filter(m => m.mapWinner != null).map(m => m.mapName).join(', ');
 
     const tagA = match.teamATag ? ` [${match.teamATag}]` : '';
     const tagB = match.teamBTag ? ` [${match.teamBTag}]` : '';
