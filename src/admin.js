@@ -163,6 +163,7 @@ function initDashboard() {
     refreshTeamList();
     refreshDriverList();
     refreshDropdowns();
+    refreshDriverDeleteDropdown();
   });
 
   onSnapshot(query(collection(db, 'standings'), orderBy('rank', 'asc')), snap => {
@@ -203,6 +204,7 @@ function initDashboard() {
   // Danger zone
   delTeamBtn.addEventListener('click', deleteTeamAction);
   delMatchBtn.addEventListener('click', deleteMatchAction);
+  document.getElementById('delDriverBtn').addEventListener('click', deleteDriverAction);
 
   // Invite system (admin only)
   document.getElementById('genInviteBtn').addEventListener('click', generateInvite);
@@ -765,21 +767,16 @@ function deleteTeamAction() {
   if (staffRole !== 'admin') { toast('Admin access required', true); return; }
   const teamId = document.getElementById('del-team').value;
   if (!teamId) { toast('Select a team first', true); return; }
-  const btn = delTeamBtn;
-  if (btn.dataset.confirm !== teamId) {
-    btn.textContent = 'Click again to confirm';
-    btn.dataset.confirm = teamId;
-    setTimeout(() => { btn.textContent = 'Delete Team'; delete btn.dataset.confirm; }, 3000);
-    return;
-  }
-  delete btn.dataset.confirm;
-  btn.textContent = 'Delete Team';
+  const team = teamsCache.find(t => t.id === teamId);
+  if (!team) { toast('Team not found', true); return; }
+  const confirm = document.getElementById('del-team-confirm').value.trim();
+  if (confirm !== team.name) { toast(`Type "${team.name}" to confirm`, true); return; }
 
   const batch = writeBatch(db);
   batch.delete(doc(db, 'teams', teamId));
   batch.delete(doc(db, 'standings', teamId));
   batch.commit()
-    .then(() => toast('Team deleted'))
+    .then(() => { toast('Team deleted'); document.getElementById('del-team-confirm').value = ''; })
     .catch(e => toast('Delete failed: ' + e.message, true));
 }
 
@@ -791,7 +788,7 @@ async function loadMatchesForDelete() {
   sel.innerHTML = '<option value="">— select match —</option>' +
     matchesCache.map(m => {
       const dateStr = m.date?.toDate ? m.date.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
-      return `<option value="${m.id}">${m.teamAName} vs ${m.teamBName} (${dateStr})</option>`;
+      return `<option value="${m.id}" data-label="${m.teamATag || ''} vs ${m.teamBTag || ''}">${m.teamAName} vs ${m.teamBName} (${dateStr})</option>`;
     }).join('');
 }
 
@@ -799,18 +796,51 @@ function deleteMatchAction() {
   if (staffRole !== 'admin') { toast('Admin access required', true); return; }
   const matchId = document.getElementById('del-match').value;
   if (!matchId) { toast('Select a match first', true); return; }
-  const btn = delMatchBtn;
-  if (btn.dataset.confirm !== matchId) {
-    btn.textContent = 'Click again to confirm';
-    btn.dataset.confirm = matchId;
-    setTimeout(() => { btn.textContent = 'Delete Match'; delete btn.dataset.confirm; }, 3000);
-    return;
-  }
-  delete btn.dataset.confirm;
-  btn.textContent = 'Delete Match';
+  const match = matchesCache.find(m => m.id === matchId);
+  if (!match) { toast('Match not found', true); return; }
+  const expected = `${match.teamATag || match.teamAName} vs ${match.teamBTag || match.teamBName}`;
+  const confirm = document.getElementById('del-match-confirm').value.trim();
+  if (confirm !== expected) { toast(`Type "${expected}" to confirm`, true); return; }
 
   deleteDoc(doc(db, 'matches', matchId))
-    .then(() => { toast('Match deleted. CRP and standings were NOT reverted.'); loadMatchesForDelete(); })
+    .then(() => { toast('Match deleted. CRP and standings were NOT reverted.'); document.getElementById('del-match-confirm').value = ''; loadMatchesForDelete(); })
+    .catch(e => toast('Delete failed: ' + e.message, true));
+}
+
+// --- Delete Driver ---
+function refreshDriverDeleteDropdown() {
+  const sel = document.getElementById('del-driver');
+  if (!sel) return;
+  const allDrivers = [];
+  teamsCache.forEach(t => {
+    (t.roster || []).forEach((d, idx) => {
+      allDrivers.push({ name: d.name, discordId: d.discordId, teamId: t.id, teamTag: t.tag, rosterIdx: idx });
+    });
+  });
+  allDrivers.sort((a, b) => a.name.localeCompare(b.name));
+  sel.innerHTML = '<option value="">— select driver —</option>' +
+    allDrivers.map((d, i) => `<option value="${i}" data-name="${d.name}">${d.name} [${d.teamTag}]</option>`).join('');
+  sel._drivers = allDrivers;
+}
+
+function deleteDriverAction() {
+  if (staffRole !== 'admin') { toast('Admin access required', true); return; }
+  const sel = document.getElementById('del-driver');
+  const idx = sel.value;
+  if (idx === '') { toast('Select a driver first', true); return; }
+  const driver = sel._drivers[parseInt(idx)];
+  if (!driver) { toast('Driver not found', true); return; }
+  const confirm = document.getElementById('del-driver-confirm').value.trim();
+  if (confirm !== driver.name) { toast(`Type "${driver.name}" to confirm`, true); return; }
+
+  const t = teamsCache.find(x => x.id === driver.teamId);
+  if (!t) { toast('Team not found', true); return; }
+  const newRoster = (t.roster || []).filter((_, i) => i !== driver.rosterIdx);
+  const batch = writeBatch(db);
+  batch.update(doc(db, 'teams', driver.teamId), { roster: newRoster });
+  batch.update(doc(db, 'standings', driver.teamId), { roster: newRoster });
+  batch.commit()
+    .then(() => { toast(`Driver "${driver.name}" removed from [${driver.teamTag}]`); document.getElementById('del-driver-confirm').value = ''; })
     .catch(e => toast('Delete failed: ' + e.message, true));
 }
 

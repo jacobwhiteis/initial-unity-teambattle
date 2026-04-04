@@ -311,11 +311,16 @@
 
                         <div class="card">
                             <h4>Delete Team</h4>
+                            <div class="info-box">Permanently deletes the team and its standings. Type the team name to confirm.</div>
                             <div class="form-group">
                                 <label for="del-team">Select Team</label>
                                 <select id="del-team">
                                     <option value="">— select team —</option>
                                 </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="del-team-confirm">Type team name to confirm</label>
+                                <input type="text" id="del-team-confirm" placeholder="Type team name exactly">
                             </div>
                             <div class="form-actions">
                                 <button class="btn btn-danger" id="delTeamBtn">Delete Team</button>
@@ -324,14 +329,37 @@
 
                         <div class="card">
                             <h4>Delete Match</h4>
+                            <div class="info-box">Permanently deletes the match record. CRP and standings are NOT reverted. Type the match description to confirm.</div>
                             <div class="form-group">
                                 <label for="del-match">Select Recent Match</label>
                                 <select id="del-match">
                                     <option value="">— select match —</option>
                                 </select>
                             </div>
+                            <div class="form-group">
+                                <label for="del-match-confirm">Type match name to confirm (e.g. "MTD vs AKG")</label>
+                                <input type="text" id="del-match-confirm" placeholder="Type match name exactly">
+                            </div>
                             <div class="form-actions">
                                 <button class="btn btn-danger" id="delMatchBtn">Delete Match</button>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h4>Delete Driver</h4>
+                            <div class="info-box">Removes a driver from their team roster. Type the driver name to confirm.</div>
+                            <div class="form-group">
+                                <label for="del-driver">Select Driver</label>
+                                <select id="del-driver">
+                                    <option value="">— select driver —</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="del-driver-confirm">Type driver name to confirm</label>
+                                <input type="text" id="del-driver-confirm" placeholder="Type driver name exactly">
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn btn-danger" id="delDriverBtn">Delete Driver</button>
                             </div>
                         </div>
 
