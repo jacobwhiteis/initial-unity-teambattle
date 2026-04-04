@@ -79,7 +79,9 @@ async function loadMatch() {
   `;
 
   // Map breakdown — prefer mapResults (from battle), fall back to maps (from quick-log)
-  const mapResults = match.mapResults || match.maps || [];
+  const mapResults = (match.mapResults?.length ? match.mapResults : null)
+    || (match.maps?.length ? match.maps : null)
+    || [];
 
   if (mapResults.length > 0) {
     html += '<h3 class="section-header">Map Breakdown</h3>';

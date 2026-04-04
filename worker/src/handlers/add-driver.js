@@ -56,7 +56,7 @@ export async function handleAddDriver(interaction, env) {
   }
 
   // 6. Build new roster
-  const newRoster = [...roster, { name: displayName, role: 'Member', discordId: playerId }];
+  const newRoster = [...roster, { name: displayName, role: 'Member', discordId: playerId, car: null }];
 
   // 7. Atomic batch write to teams + standings
   await db.batchWrite([

@@ -252,6 +252,17 @@ function refreshBattleDropdowns() {
 // Team Management
 // ---------------------------------------------------------------------------
 
+const CAR_LIST = [
+  'AE86','FD3S','RPS13','BNR32','CE9A','EG6','SW20','FC3S',
+  'AP1','NA6CE','NA1','GC8F','DC2','JZA80','S14','ZZW30','EA11R','CN9A'
+];
+const MAX_TEAM_STAFF = 2;
+
+function carOptions(selected) {
+  return '<option value=""' + (!selected ? ' selected' : '') + '>— no car —</option>' +
+    CAR_LIST.map(c => `<option value="${c}"${selected === c ? ' selected' : ''}>${c}</option>`).join('');
+}
+
 function refreshTeamList() {
   const el = document.getElementById('mod-team-list');
   if (!teamsCache.length) {
@@ -271,39 +282,215 @@ function refreshTeamList() {
         <span class="ml-name">${t.name}</span>
         <span class="ml-info">${standing?.wins || 0}W / ${standing?.losses || 0}L</span>
         <span class="ml-crp">${standing?.crp || 0} CRP</span>
-        <button class="btn btn-ghost btn-sm" data-team-id="${t.id}">Edit</button>
+        <button class="btn btn-ghost btn-sm" data-edit-team="${t.id}">Edit</button>
       </div>
       <div style="width:100%;padding-top:.4rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
         <span style="color:var(--text-mute);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;">Drivers (${drivers.length}/${MAX_ROSTER_SIZE}):</span>
         <span style="color:var(--text-dim);font-size:.82rem;">${driverNames || 'None'}</span>
-        <button class="btn btn-ghost btn-sm" data-manage-team="${t.id}" style="margin-left:auto;font-size:.7rem;">Manage Drivers</button>
       </div>
     </div>`;
   }).join('');
 
-  // Wire edit buttons
-  el.querySelectorAll('[data-team-id]').forEach(btn => {
-    btn.addEventListener('click', () => loadTeamForEdit(btn.dataset.teamId));
-  });
-  // Wire manage driver buttons
-  el.querySelectorAll('[data-manage-team]').forEach(btn => {
-    btn.addEventListener('click', () => openDriverManager(btn.dataset.manageTeam));
+  el.querySelectorAll('[data-edit-team]').forEach(btn => {
+    btn.addEventListener('click', () => openTeamEditor(btn.dataset.editTeam));
   });
 }
 
-function loadTeamForEdit(teamId) {
-  const t = teamsCache.find(x => x.id === teamId);
-  if (!t) return;
-  document.getElementById('t-name').value = t.name || '';
-  document.getElementById('t-tag').value = t.tag || '';
-  document.getElementById('t-captain').value = t.captainDiscordId || '';
-  document.getElementById('t-active').checked = t.active !== false;
+// ---------------------------------------------------------------------------
+// Unified Team Editor (team info + drivers + team staff)
+// ---------------------------------------------------------------------------
+
+function openTeamEditor(teamId) {
+  const team = teamsCache.find(t => t.id === teamId);
+  if (!team) return;
+  const drivers = team.roster || [];
+  const teamStaff = team.teamStaff || [];
+
+  // Populate team info form
+  document.getElementById('t-name').value = team.name || '';
+  document.getElementById('t-tag').value = team.tag || '';
+  document.getElementById('t-captain').value = team.captainDiscordId || '';
+  document.getElementById('t-active').checked = team.active !== false;
   document.getElementById('t-editing').value = teamId;
+
   // Switch to teams section
   document.querySelectorAll('.mod-section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.mod-nav').forEach(b => b.classList.remove('active'));
   document.getElementById('sec-teams').classList.add('active');
   document.querySelector('[data-section="sec-teams"]').classList.add('active');
+
+  // Render driver + staff editor in the driver-manager panel
+  const el = document.getElementById('driver-manager');
+  el.style.display = 'block';
+  el.innerHTML = `
+    <h4 style="margin-bottom:.5rem;">Drivers (${drivers.length}/${MAX_ROSTER_SIZE})</h4>
+    <p style="color:var(--text-mute);font-size:.82rem;margin-bottom:1rem;">New drivers are added via Discord bot (<code>/add-team-driver</code>). Edit name, role, or car below.</p>
+    <div class="mod-list" id="dm-driver-list">
+      ${drivers.length ? drivers.map((d, i) => `<div class="mod-list-item" style="flex-wrap:wrap;gap:.5rem;">
+        <div style="display:flex;align-items:center;gap:.5rem;flex:1;min-width:200px;flex-wrap:wrap;">
+          <input type="text" class="dm-edit-name" data-idx="${i}" value="${(d.name || '').replace(/"/g, '&quot;')}" style="flex:1;min-width:120px;padding:.3rem .5rem;font-size:.85rem;">
+          <select class="dm-edit-role" data-idx="${i}" style="width:120px;padding:.3rem .5rem;font-size:.85rem;">
+            <option value="Member"${d.role === 'Member' ? ' selected' : ''}>Member</option>
+            <option value="Co-Leader"${d.role === 'Co-Leader' ? ' selected' : ''}>Co-Leader</option>
+            <option value="Leader"${d.role === 'Leader' ? ' selected' : ''}>Leader</option>
+          </select>
+          <select class="dm-edit-car" data-idx="${i}" style="width:110px;padding:.3rem .5rem;font-size:.85rem;">
+            ${carOptions(d.car)}
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem;">
+          ${d.discordId ? `<span style="color:var(--text-mute);font-size:.75rem;">${d.discordId}</span>` : ''}
+          <button class="btn btn-primary btn-sm dm-save-btn" data-idx="${i}" data-team-id="${teamId}">Save</button>
+          <button class="btn btn-danger btn-sm dm-remove-btn" data-team-id="${teamId}" data-driver-idx="${i}">Remove</button>
+        </div>
+      </div>`).join('') : '<p class="empty-state">No drivers — use <code>/add-team-driver</code> in Discord.</p>'}
+    </div>
+
+    <h4 style="margin-top:1.5rem;margin-bottom:.5rem;">Team Staff (${teamStaff.length}/${MAX_TEAM_STAFF})</h4>
+    <p style="color:var(--text-mute);font-size:.82rem;margin-bottom:1rem;">Non-playing team members (manager, coach).</p>
+    <div class="mod-list" id="dm-staff-list">
+      ${teamStaff.map((s, i) => `<div class="mod-list-item" style="gap:.5rem;">
+        <input type="text" class="ts-edit-name" data-idx="${i}" value="${(s.name || '').replace(/"/g, '&quot;')}" style="flex:1;padding:.3rem .5rem;font-size:.85rem;">
+        <select class="ts-edit-role" data-idx="${i}" style="width:120px;padding:.3rem .5rem;font-size:.85rem;">
+          <option value="Manager"${s.role === 'Manager' ? ' selected' : ''}>Manager</option>
+          <option value="Coach"${s.role === 'Coach' ? ' selected' : ''}>Coach</option>
+        </select>
+        <button class="btn btn-primary btn-sm ts-save-btn" data-idx="${i}" data-team-id="${teamId}">Save</button>
+        <button class="btn btn-danger btn-sm ts-remove-btn" data-team-id="${teamId}" data-staff-idx="${i}">Remove</button>
+      </div>`).join('')}
+      ${teamStaff.length < MAX_TEAM_STAFF ? `
+      <div style="display:flex;gap:.5rem;margin-top:.5rem;align-items:end;">
+        <input type="text" id="ts-new-name" placeholder="Name" style="flex:1;padding:.3rem .5rem;font-size:.85rem;">
+        <select id="ts-new-role" style="width:120px;padding:.3rem .5rem;font-size:.85rem;">
+          <option value="Manager">Manager</option>
+          <option value="Coach">Coach</option>
+        </select>
+        <button class="btn btn-primary btn-sm" id="ts-add-btn" data-team-id="${teamId}">Add</button>
+      </div>` : ''}
+    </div>
+    <div style="margin-top:1rem;"><button class="btn btn-ghost btn-sm" id="dm-close-btn">Close</button></div>
+  `;
+
+  wireTeamEditorEvents(el, teamId);
+}
+
+function wireTeamEditorEvents(el, teamId) {
+  // --- Driver save buttons ---
+  el.querySelectorAll('.dm-save-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const idx = parseInt(btn.dataset.idx);
+      const newName = el.querySelector(`.dm-edit-name[data-idx="${idx}"]`).value.trim();
+      const newRole = el.querySelector(`.dm-edit-role[data-idx="${idx}"]`).value;
+      const newCar = el.querySelector(`.dm-edit-car[data-idx="${idx}"]`).value || null;
+      if (!newName) { toast('Name cannot be empty', true); return; }
+      const t = teamsCache.find(x => x.id === teamId);
+      if (!t) return;
+      const newRoster = [...(t.roster || [])];
+      newRoster[idx] = { ...newRoster[idx], name: newName, role: newRole, car: newCar };
+      try {
+        const batch = writeBatch(db);
+        batch.update(doc(db, 'teams', teamId), { roster: newRoster });
+        batch.update(doc(db, 'standings', teamId), { roster: newRoster });
+        await batch.commit();
+        toast(`Updated ${newName}`);
+        openTeamEditor(teamId);
+      } catch (e) {
+        toast('Failed to update driver: ' + e.message, true);
+      }
+    });
+  });
+
+  // --- Driver remove buttons ---
+  el.querySelectorAll('.dm-remove-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const idx = parseInt(btn.dataset.driverIdx);
+      const t = teamsCache.find(x => x.id === teamId);
+      if (!t) return;
+      const newRoster = (t.roster || []).filter((_, i) => i !== idx);
+      try {
+        const batch = writeBatch(db);
+        batch.update(doc(db, 'teams', teamId), { roster: newRoster });
+        batch.update(doc(db, 'standings', teamId), { roster: newRoster });
+        await batch.commit();
+        toast('Driver removed');
+        openTeamEditor(teamId);
+      } catch (e) {
+        toast('Failed to remove driver: ' + e.message, true);
+      }
+    });
+  });
+
+  // --- Team staff save buttons ---
+  el.querySelectorAll('.ts-save-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const idx = parseInt(btn.dataset.idx);
+      const newName = el.querySelector(`.ts-edit-name[data-idx="${idx}"]`).value.trim();
+      const newRole = el.querySelector(`.ts-edit-role[data-idx="${idx}"]`).value;
+      if (!newName) { toast('Name cannot be empty', true); return; }
+      const t = teamsCache.find(x => x.id === teamId);
+      if (!t) return;
+      const newStaff = [...(t.teamStaff || [])];
+      newStaff[idx] = { name: newName, role: newRole };
+      try {
+        const batch = writeBatch(db);
+        batch.update(doc(db, 'teams', teamId), { teamStaff: newStaff });
+        batch.update(doc(db, 'standings', teamId), { teamStaff: newStaff });
+        await batch.commit();
+        toast(`Updated ${newName}`);
+        openTeamEditor(teamId);
+      } catch (e) {
+        toast('Failed to update staff: ' + e.message, true);
+      }
+    });
+  });
+
+  // --- Team staff remove buttons ---
+  el.querySelectorAll('.ts-remove-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const idx = parseInt(btn.dataset.staffIdx);
+      const t = teamsCache.find(x => x.id === teamId);
+      if (!t) return;
+      const newStaff = (t.teamStaff || []).filter((_, i) => i !== idx);
+      try {
+        const batch = writeBatch(db);
+        batch.update(doc(db, 'teams', teamId), { teamStaff: newStaff });
+        batch.update(doc(db, 'standings', teamId), { teamStaff: newStaff });
+        await batch.commit();
+        toast('Staff member removed');
+        openTeamEditor(teamId);
+      } catch (e) {
+        toast('Failed to remove staff: ' + e.message, true);
+      }
+    });
+  });
+
+  // --- Team staff add button ---
+  el.querySelector('#ts-add-btn')?.addEventListener('click', async () => {
+    const name = document.getElementById('ts-new-name').value.trim();
+    const role = document.getElementById('ts-new-role').value;
+    if (!name) { toast('Enter a name', true); return; }
+    const t = teamsCache.find(x => x.id === teamId);
+    if (!t) return;
+    const staff = t.teamStaff || [];
+    if (staff.length >= MAX_TEAM_STAFF) { toast(`Maximum ${MAX_TEAM_STAFF} team staff`, true); return; }
+    const newStaff = [...staff, { name, role }];
+    try {
+      const batch = writeBatch(db);
+      batch.update(doc(db, 'teams', teamId), { teamStaff: newStaff });
+      batch.update(doc(db, 'standings', teamId), { teamStaff: newStaff });
+      await batch.commit();
+      toast(`Added ${name}`);
+      openTeamEditor(teamId);
+    } catch (e) {
+      toast('Failed to add staff: ' + e.message, true);
+    }
+  });
+
+  // --- Close ---
+  el.querySelector('#dm-close-btn')?.addEventListener('click', () => {
+    el.style.display = 'none';
+    clearTeamForm();
+  });
 }
 
 function clearTeamForm() {
@@ -312,6 +499,7 @@ function clearTeamForm() {
   document.getElementById('t-captain').value = '';
   document.getElementById('t-active').checked = true;
   document.getElementById('t-editing').value = '';
+  document.getElementById('driver-manager').style.display = 'none';
 }
 
 async function saveTeam() {
@@ -327,18 +515,16 @@ async function saveTeam() {
   const batch = writeBatch(db);
 
   if (editingId) {
-    // Update existing
     const teamRef = doc(db, 'teams', editingId);
     batch.update(teamRef, { name, tag, captainDiscordId: captain, active });
     const standingRef = doc(db, 'standings', editingId);
     batch.update(standingRef, { teamName: name, teamTag: tag });
   } else {
-    // Create new — roster starts empty, drivers added via Discord bot
     const id = tag.toLowerCase();
     const teamRef = doc(db, 'teams', id);
     batch.set(teamRef, {
       name, tag, captainDiscordId: captain, active,
-      roster: [], createdAt: Timestamp.now()
+      roster: [], teamStaff: [], createdAt: Timestamp.now()
     });
     const standingRef = doc(db, 'standings', id);
     batch.set(standingRef, {
@@ -346,7 +532,7 @@ async function saveTeam() {
       wins: 0, losses: 0, mapWins: 0, mapLosses: 0, winRate: 0,
       streak: 0, rank: standingsCache.length + 1,
       crp: 0, position: null, consecutive_wins: 0,
-      roster: [], match_history: [], lastMatchDate: null
+      roster: [], teamStaff: [], match_history: [], lastMatchDate: null
     });
   }
 
@@ -358,99 +544,6 @@ async function saveTeam() {
     console.error(e);
     toast('Failed to save team: ' + e.message, true);
   }
-}
-
-// ---------------------------------------------------------------------------
-// Driver Manager (inline in teams tab)
-// ---------------------------------------------------------------------------
-
-function openDriverManager(teamId) {
-  const team = teamsCache.find(t => t.id === teamId);
-  if (!team) return;
-  const drivers = team.roster || [];
-
-  // Switch to teams section
-  document.querySelectorAll('.mod-section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.mod-nav').forEach(b => b.classList.remove('active'));
-  document.getElementById('sec-teams').classList.add('active');
-  document.querySelector('[data-section="sec-teams"]').classList.add('active');
-
-  // Show driver manager panel
-  const el = document.getElementById('driver-manager');
-  el.style.display = 'block';
-  el.innerHTML = `
-    <h4 style="margin-bottom:1rem;">${team.name} [${team.tag}] — Drivers (${drivers.length}/${MAX_ROSTER_SIZE})</h4>
-    <p style="color:var(--text-mute);font-size:.82rem;margin-bottom:1rem;">New drivers are added via Discord bot (<code>/add-team-driver</code>). Edit name or role below.</p>
-    <div class="mod-list" id="dm-driver-list">
-      ${drivers.length ? drivers.map((d, i) => `<div class="mod-list-item" style="flex-wrap:wrap;gap:.5rem;">
-        <div style="display:flex;align-items:center;gap:.5rem;flex:1;min-width:200px;">
-          <input type="text" class="dm-edit-name" data-idx="${i}" value="${(d.name || '').replace(/"/g, '&quot;')}" style="flex:1;padding:.3rem .5rem;font-size:.85rem;">
-          <select class="dm-edit-role" data-idx="${i}" style="width:120px;padding:.3rem .5rem;font-size:.85rem;">
-            <option value="Member"${d.role === 'Member' ? ' selected' : ''}>Member</option>
-            <option value="Co-Leader"${d.role === 'Co-Leader' ? ' selected' : ''}>Co-Leader</option>
-            <option value="Leader"${d.role === 'Leader' ? ' selected' : ''}>Leader</option>
-          </select>
-        </div>
-        <div style="display:flex;align-items:center;gap:.5rem;">
-          ${d.discordId ? `<span style="color:var(--text-mute);font-size:.75rem;">Discord: ${d.discordId}</span>` : '<span style="color:var(--text-mute);font-size:.75rem;font-style:italic;">No Discord ID</span>'}
-          <button class="btn btn-primary btn-sm dm-save-btn" data-idx="${i}">Save</button>
-          <button class="btn btn-danger btn-sm" data-dm-remove="${teamId}:${d.discordId || d.name}">Remove</button>
-        </div>
-      </div>`).join('') : '<p class="empty-state">No drivers — use <code>/add-team-driver</code> in Discord.</p>'}
-    </div>
-    <div style="margin-top:.75rem;"><button class="btn btn-ghost btn-sm" id="dm-close-btn">Close</button></div>
-  `;
-
-  // Wire save buttons (inline edit)
-  el.querySelectorAll('.dm-save-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const idx = parseInt(btn.dataset.idx);
-      const newName = el.querySelector(`.dm-edit-name[data-idx="${idx}"]`).value.trim();
-      const newRole = el.querySelector(`.dm-edit-role[data-idx="${idx}"]`).value;
-      if (!newName) { toast('Name cannot be empty', true); return; }
-      const t = teamsCache.find(x => x.id === teamId);
-      if (!t) return;
-      const newRoster = [...(t.roster || [])];
-      newRoster[idx] = { ...newRoster[idx], name: newName, role: newRole };
-      try {
-        const batch = writeBatch(db);
-        batch.update(doc(db, 'teams', teamId), { roster: newRoster });
-        batch.update(doc(db, 'standings', teamId), { roster: newRoster });
-        await batch.commit();
-        toast(`Updated ${newName}`);
-        openDriverManager(teamId);
-      } catch (e) {
-        toast('Failed to update driver: ' + e.message, true);
-      }
-    });
-  });
-
-  // Wire remove buttons
-  el.querySelectorAll('[data-dm-remove]').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const [tid, identifier] = btn.dataset.dmRemove.split(':');
-      const t = teamsCache.find(x => x.id === tid);
-      if (!t) return;
-      const newRoster = (t.roster || []).filter(d =>
-        d.discordId ? d.discordId !== identifier : d.name !== identifier
-      );
-      try {
-        const batch = writeBatch(db);
-        batch.update(doc(db, 'teams', tid), { roster: newRoster });
-        batch.update(doc(db, 'standings', tid), { roster: newRoster });
-        await batch.commit();
-        toast('Driver removed');
-        openDriverManager(tid);
-      } catch (e) {
-        toast('Failed to remove driver: ' + e.message, true);
-      }
-    });
-  });
-
-  // Wire close
-  el.querySelector('#dm-close-btn')?.addEventListener('click', () => {
-    el.style.display = 'none';
-  });
 }
 
 // (Driver management is now inline in the Teams tab via openDriverManager)

@@ -85,7 +85,19 @@ async function loadTeam() {
     html += '<div class="roster-grid">';
     team.roster.forEach(player => {
       const roleLabel = player.role === 'Leader' ? ' ★' : player.role === 'Co-Leader' ? ' ☆' : '';
-      html += `<span class="roster-player">${player.name}${roleLabel}</span>`;
+      const carLabel = player.car ? ` · ${player.car}` : '';
+      html += `<span class="roster-player">${player.name}${roleLabel}${carLabel}</span>`;
+    });
+    html += '</div>';
+  }
+
+  // Team staff (non-drivers)
+  const teamStaff = team.teamStaff || [];
+  if (teamStaff.length > 0) {
+    html += '<h3 class="section-header">Team Staff</h3>';
+    html += '<div class="roster-grid">';
+    teamStaff.forEach(s => {
+      html += `<span class="roster-player">${s.name} · ${s.role}</span>`;
     });
     html += '</div>';
   }

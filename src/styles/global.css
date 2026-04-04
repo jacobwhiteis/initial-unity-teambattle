@@ -936,6 +936,11 @@ tr.expand-row td {
 /* ============================================
    MATCH DETAIL
    ============================================ */
+#matchContainer {
+    max-width: 720px;
+    margin: 0 auto;
+}
+
 .match-detail-header {
     text-align: center;
     margin-bottom: 40px;
