@@ -13,7 +13,7 @@ import { postToDiscord, battleCreatedMessage, clearWebhookCache } from './discor
 // Constants
 // ---------------------------------------------------------------------------
 
-const CARS = ['AE86','AP1','BNR32','CE9A','CN9A','DC2','EA11R','EG6','FC3S','FD3S','GC8F','JZA80','NA1','NA6CE','RPS13','S14','SW20','ZZW30'];
+const MAX_ROSTER_SIZE = 6;
 
 // ---------------------------------------------------------------------------
 // DOM Elements
@@ -29,8 +29,6 @@ const logoutBtn     = document.getElementById('logoutBtn');
 const dangerNav     = document.getElementById('dangerNav');
 const saveTeamBtn   = document.getElementById('saveTeamBtn');
 const clearTeamBtn  = document.getElementById('clearTeamBtn');
-const saveDriverBtn = document.getElementById('saveDriverBtn');
-const clearDriverBtn = document.getElementById('clearDriverBtn');
 const logMatchBtn   = document.getElementById('logMatchBtn');
 const seasonResetBtn = document.getElementById('seasonResetBtn');
 const delTeamBtn    = document.getElementById('delTeamBtn');
@@ -133,15 +131,10 @@ document.querySelectorAll('.mod-nav').forEach(btn => {
 // ---------------------------------------------------------------------------
 
 function initDashboard() {
-  // Populate car dropdown
-  const carSelect = document.getElementById('d-car');
-  carSelect.innerHTML = '<option value="">— select car —</option>' + CARS.map(c => `<option value="${c}">${c}</option>`).join('');
-
   // Real-time listeners
   onSnapshot(query(collection(db, 'teams'), orderBy('name')), snap => {
     teamsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     refreshTeamList();
-    refreshDriverList();
     refreshDropdowns();
   });
 
@@ -158,8 +151,6 @@ function initDashboard() {
   // Wire up event listeners
   saveTeamBtn.addEventListener('click', saveTeam);
   clearTeamBtn.addEventListener('click', clearTeamForm);
-  saveDriverBtn.addEventListener('click', saveDriver);
-  clearDriverBtn.addEventListener('click', clearDriverForm);
   logMatchBtn.addEventListener('click', logMatch);
 
   // Match form change listeners
@@ -253,18 +244,34 @@ function refreshTeamList() {
   }
   el.innerHTML = teamsCache.map(t => {
     const standing = standingsCache.find(s => s.id === t.id);
-    return `<div class="mod-list-item">
-      <span class="tag-badge">${t.tag || '?'}</span>
-      <span class="ml-name">${t.name}</span>
-      <span class="ml-info">${standing?.wins || 0}W / ${standing?.losses || 0}L</span>
-      <span class="ml-crp">${standing?.crp || 0} CRP</span>
-      <button class="btn btn-ghost btn-sm" data-team-id="${t.id}">Edit</button>
+    const drivers = t.roster || [];
+    const driverNames = drivers.map(d => {
+      const roleTag = d.role === 'Leader' ? ' ★' : d.role === 'Co-Leader' ? ' ☆' : '';
+      return d.name + roleTag;
+    }).join(', ');
+    return `<div class="mod-list-item" style="flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:.5rem;flex:1;min-width:200px;">
+        <span class="tag-badge">${t.tag || '?'}</span>
+        <span class="ml-name">${t.name}</span>
+        <span class="ml-info">${standing?.wins || 0}W / ${standing?.losses || 0}L</span>
+        <span class="ml-crp">${standing?.crp || 0} CRP</span>
+        <button class="btn btn-ghost btn-sm" data-team-id="${t.id}">Edit</button>
+      </div>
+      <div style="width:100%;padding-top:.4rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
+        <span style="color:var(--text-mute);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;">Drivers (${drivers.length}/${MAX_ROSTER_SIZE}):</span>
+        <span style="color:var(--text-dim);font-size:.82rem;">${driverNames || 'None'}</span>
+        <button class="btn btn-ghost btn-sm" data-manage-team="${t.id}" style="margin-left:auto;font-size:.7rem;">Manage Drivers</button>
+      </div>
     </div>`;
   }).join('');
 
   // Wire edit buttons
   el.querySelectorAll('[data-team-id]').forEach(btn => {
     btn.addEventListener('click', () => loadTeamForEdit(btn.dataset.teamId));
+  });
+  // Wire manage driver buttons
+  el.querySelectorAll('[data-manage-team]').forEach(btn => {
+    btn.addEventListener('click', () => openDriverManager(btn.dataset.manageTeam));
   });
 }
 
@@ -301,6 +308,23 @@ async function saveTeam() {
   if (!name) { toast('Team name required', true); return; }
   if (!tag) { toast('Team tag required', true); return; }
 
+  // Parse initial drivers from the form (only for new teams)
+  const leaderName = document.getElementById('t-leader')?.value.trim() || '';
+  const coLeaderName = document.getElementById('t-coleader')?.value.trim() || '';
+  const driverInputs = document.querySelectorAll('.t-driver-input');
+  const initialRoster = [];
+  if (leaderName) initialRoster.push({ name: leaderName, role: 'Leader' });
+  if (coLeaderName) initialRoster.push({ name: coLeaderName, role: 'Co-Leader' });
+  driverInputs.forEach(input => {
+    const v = input.value.trim();
+    if (v) initialRoster.push({ name: v, role: 'Member' });
+  });
+
+  if (initialRoster.length > MAX_ROSTER_SIZE) {
+    toast(`Maximum ${MAX_ROSTER_SIZE} drivers per team`, true);
+    return;
+  }
+
   const batch = writeBatch(db);
 
   if (editingId) {
@@ -315,7 +339,7 @@ async function saveTeam() {
     const teamRef = doc(db, 'teams', id);
     batch.set(teamRef, {
       name, tag, captainDiscordId: captain, active,
-      roster: [], createdAt: Timestamp.now()
+      roster: initialRoster, createdAt: Timestamp.now()
     });
     const standingRef = doc(db, 'standings', id);
     batch.set(standingRef, {
@@ -323,7 +347,7 @@ async function saveTeam() {
       wins: 0, losses: 0, mapWins: 0, mapLosses: 0, winRate: 0,
       streak: 0, rank: standingsCache.length + 1,
       crp: 0, position: null, consecutive_wins: 0,
-      roster: [], match_history: [], lastMatchDate: null
+      roster: initialRoster, match_history: [], lastMatchDate: null
     });
   }
 
@@ -338,120 +362,96 @@ async function saveTeam() {
 }
 
 // ---------------------------------------------------------------------------
-// Driver Management
+// Driver Manager (inline in teams tab)
 // ---------------------------------------------------------------------------
 
-function refreshDriverList() {
-  const el = document.getElementById('mod-driver-list');
-  const allDrivers = [];
-  teamsCache.forEach(t => {
-    (t.roster || []).forEach(d => {
-      allDrivers.push({ ...d, teamId: t.id, teamName: t.name, teamTag: t.tag });
-    });
-  });
-
-  if (!allDrivers.length) {
-    el.innerHTML = '<p class="empty-state">No drivers yet.</p>';
-    return;
-  }
-
-  el.innerHTML = allDrivers.map(d => `<div class="mod-list-item">
-    <span class="ml-name">${d.name}</span>
-    <span class="ml-info">${d.car || '—'}</span>
-    <span class="ml-info">${d.role || 'Member'}</span>
-    <span style="color:var(--accent);font-size:.82rem">${d.teamTag || '—'}</span>
-    <button class="btn btn-ghost btn-sm" data-driver="${d.teamId}:${d.name}">Edit</button>
-  </div>`).join('');
-
-  el.querySelectorAll('[data-driver]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const [teamId, driverName] = btn.dataset.driver.split(':');
-      loadDriverForEdit(teamId, driverName);
-    });
-  });
-}
-
-function loadDriverForEdit(teamId, driverName) {
+function openDriverManager(teamId) {
   const team = teamsCache.find(t => t.id === teamId);
   if (!team) return;
-  const driver = (team.roster || []).find(d => d.name === driverName);
-  if (!driver) return;
-  document.getElementById('d-name').value = driver.name;
-  document.getElementById('d-car').value = driver.car || '';
-  document.getElementById('d-role').value = driver.role || 'Member';
-  setTimeout(() => { document.getElementById('d-team').value = teamId; }, 10);
-  document.getElementById('d-editing').value = `${teamId}:${driverName}`;
-  // Switch to drivers section
+  const drivers = team.roster || [];
+
+  // Switch to teams section
   document.querySelectorAll('.mod-section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.mod-nav').forEach(b => b.classList.remove('active'));
-  document.getElementById('sec-drivers').classList.add('active');
-  document.querySelector('[data-section="sec-drivers"]').classList.add('active');
-}
+  document.getElementById('sec-teams').classList.add('active');
+  document.querySelector('[data-section="sec-teams"]').classList.add('active');
 
-function clearDriverForm() {
-  document.getElementById('d-name').value = '';
-  document.getElementById('d-car').value = '';
-  document.getElementById('d-role').value = 'Member';
-  document.getElementById('d-team').value = '';
-  document.getElementById('d-editing').value = '';
-}
+  // Show driver manager panel
+  const el = document.getElementById('driver-manager');
+  el.style.display = 'block';
+  el.innerHTML = `
+    <h4 style="margin-bottom:1rem;">${team.name} [${team.tag}] — Drivers (${drivers.length}/${MAX_ROSTER_SIZE})</h4>
+    <div class="mod-list" id="dm-driver-list">
+      ${drivers.length ? drivers.map(d => `<div class="mod-list-item">
+        <span class="ml-name">${d.name}</span>
+        <span class="ml-info">${d.role || 'Member'}</span>
+        <button class="btn btn-danger btn-sm" data-dm-remove="${teamId}:${d.name}">Remove</button>
+      </div>`).join('') : '<p class="empty-state">No drivers.</p>'}
+    </div>
+    ${drivers.length < MAX_ROSTER_SIZE ? `
+    <div style="display:flex;gap:.5rem;margin-top:1rem;align-items:end;">
+      <div class="form-group" style="flex:1;margin:0;">
+        <label for="dm-name">Driver Name</label>
+        <input type="text" id="dm-name" placeholder="Driver name">
+      </div>
+      <div class="form-group" style="width:140px;margin:0;">
+        <label for="dm-role">Role</label>
+        <select id="dm-role">
+          <option value="Member">Member</option>
+          <option value="Co-Leader">Co-Leader</option>
+          <option value="Leader">Leader</option>
+        </select>
+      </div>
+      <button class="btn btn-primary btn-sm" id="dm-add-btn" style="height:38px;">Add</button>
+    </div>` : '<p style="color:var(--text-mute);font-size:.82rem;margin-top:.5rem;">Roster full (${MAX_ROSTER_SIZE}/${MAX_ROSTER_SIZE})</p>'}
+    <div style="margin-top:.75rem;"><button class="btn btn-ghost btn-sm" id="dm-close-btn">Close</button></div>
+  `;
 
-async function saveDriver() {
-  const name = document.getElementById('d-name').value.trim();
-  const car = document.getElementById('d-car').value;
-  const role = document.getElementById('d-role').value;
-  const teamId = document.getElementById('d-team').value;
-  const editingKey = document.getElementById('d-editing').value;
+  // Wire remove buttons
+  el.querySelectorAll('[data-dm-remove]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const [tid, dName] = btn.dataset.dmRemove.split(':');
+      const t = teamsCache.find(x => x.id === tid);
+      if (!t) return;
+      const newRoster = (t.roster || []).filter(d => d.name !== dName);
+      const batch = writeBatch(db);
+      batch.update(doc(db, 'teams', tid), { roster: newRoster });
+      batch.update(doc(db, 'standings', tid), { roster: newRoster });
+      await batch.commit();
+      toast(`Removed ${dName}`);
+      openDriverManager(tid);
+    });
+  });
 
-  if (!name) { toast('Driver name required', true); return; }
-  if (!car) { toast('Please select a car', true); return; }
-  if (!teamId) { toast('Please select a team', true); return; }
-
-  const driverObj = { name, car, role };
-  const batch = writeBatch(db);
-
-  if (editingKey) {
-    const [oldTeamId, oldName] = editingKey.split(':');
-
-    // Remove from old team if team changed or name changed
-    if (oldTeamId !== teamId || oldName !== name) {
-      const oldTeam = teamsCache.find(t => t.id === oldTeamId);
-      if (oldTeam) {
-        const updatedOldRoster = (oldTeam.roster || []).filter(d => d.name !== oldName);
-        batch.update(doc(db, 'teams', oldTeamId), { roster: updatedOldRoster });
-        batch.update(doc(db, 'standings', oldTeamId), { roster: updatedOldRoster });
-      }
-    }
+  // Wire add button
+  const addBtn = el.querySelector('#dm-add-btn');
+  if (addBtn) {
+    addBtn.addEventListener('click', async () => {
+      const dName = document.getElementById('dm-name').value.trim();
+      const dRole = document.getElementById('dm-role').value;
+      if (!dName) { toast('Enter a driver name', true); return; }
+      const t = teamsCache.find(x => x.id === teamId);
+      if (!t) return;
+      const roster = t.roster || [];
+      if (roster.length >= MAX_ROSTER_SIZE) { toast(`Maximum ${MAX_ROSTER_SIZE} drivers`, true); return; }
+      if (roster.find(d => d.name === dName)) { toast('Driver already on roster', true); return; }
+      const newRoster = [...roster, { name: dName, role: dRole }];
+      const batch = writeBatch(db);
+      batch.update(doc(db, 'teams', teamId), { roster: newRoster });
+      batch.update(doc(db, 'standings', teamId), { roster: newRoster });
+      await batch.commit();
+      toast(`Added ${dName}`);
+      openDriverManager(teamId);
+    });
   }
 
-  // Add/update in target team
-  const targetTeam = teamsCache.find(t => t.id === teamId);
-  if (!targetTeam) { toast('Team not found', true); return; }
-
-  let newRoster = [...(targetTeam.roster || [])];
-  // If editing and same team, replace the old entry
-  if (editingKey) {
-    const [oldTeamId, oldName] = editingKey.split(':');
-    if (oldTeamId === teamId) {
-      newRoster = newRoster.filter(d => d.name !== oldName);
-    }
-  }
-  // Remove any existing driver with same name on this team (dedup)
-  newRoster = newRoster.filter(d => d.name !== name);
-  newRoster.push(driverObj);
-
-  batch.update(doc(db, 'teams', teamId), { roster: newRoster });
-  batch.update(doc(db, 'standings', teamId), { roster: newRoster });
-
-  try {
-    await batch.commit();
-    toast(`Driver "${name}" saved`);
-    clearDriverForm();
-  } catch (e) {
-    console.error(e);
-    toast('Failed to save driver: ' + e.message, true);
-  }
+  // Wire close
+  el.querySelector('#dm-close-btn')?.addEventListener('click', () => {
+    el.style.display = 'none';
+  });
 }
+
+// (Driver management is now inline in the Teams tab via openDriverManager)
 
 // ---------------------------------------------------------------------------
 // Match Logging — CRP Preview
@@ -697,6 +697,7 @@ async function createBattle() {
   batch.set(matchRef, {
     teamA: taId, teamB: tbId,
     teamAName: tA.name, teamBName: tB.name,
+    teamATag: tA.tag, teamBTag: tB.tag,
     format, status: 'banpick',
     winner: null, score: { teamA: 0, teamB: 0 },
     maps: [], mapResults: [],
@@ -744,7 +745,7 @@ async function loadBattles() {
         : '<span class="tier-badge tier-Adept">In Progress</span>';
       return `<div class="mod-list-item">
         ${statusBadge}
-        <span class="ml-name">${b.teamAName} vs ${b.teamBName}</span>
+        <span class="ml-name">${b.teamAName} [${b.teamATag || ''}] vs ${b.teamBName} [${b.teamBTag || ''}]</span>
         <span class="ml-info">${b.liveScore?.teamA || 0} — ${b.liveScore?.teamB || 0}</span>
         <a href="/battle?id=${b.id}" class="btn btn-ghost btn-sm" target="_blank">Open</a>
       </div>`;
@@ -757,7 +758,7 @@ async function loadBattles() {
     recentEl.innerHTML = recent.map(b => {
       const dateStr = b.date?.toDate ? b.date.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
       return `<div class="mod-list-item">
-        <span class="ml-name">${b.teamAName} vs ${b.teamBName}</span>
+        <span class="ml-name">${b.teamAName} [${b.teamATag || ''}] vs ${b.teamBName} [${b.teamBTag || ''}]</span>
         <span class="ml-info">${b.score?.teamA || 0} — ${b.score?.teamB || 0}</span>
         <span class="ml-info">${dateStr}</span>
         <a href="/battle?id=${b.id}" class="btn btn-ghost btn-sm" target="_blank">View</a>

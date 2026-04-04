@@ -10,7 +10,7 @@
     <nav class="site-nav">
         <div class="nav-inner">
             <a href="/" class="nav-logo">
-                <img src="/img/iur-logo.png" alt="" class="nav-logo-img">
+                <img src="/img/logo.png" alt="" class="nav-logo-img">
                 <span>IU</span> Team Battles
             </a>
             <ul class="nav-links">
@@ -73,7 +73,6 @@
                 <aside class="mod-sidebar">
                     <div class="mod-sidebar-hd">Sections</div>
                     <button class="mod-nav active" data-section="sec-teams">Teams</button>
-                    <button class="mod-nav" data-section="sec-drivers">Drivers</button>
                     <button class="mod-nav" data-section="sec-matches">Log Match</button>
                     <button class="mod-nav" data-section="sec-battles">Battles</button>
                     <button class="mod-nav" data-section="sec-invites" id="invitesNav" style="display:none">Invites</button>
@@ -111,6 +110,25 @@
                                     </label>
                                 </div>
                             </div>
+                            <div class="fr2">
+                                <div class="form-group">
+                                    <label for="t-leader">Leader Name</label>
+                                    <input type="text" id="t-leader" placeholder="Leader name (optional)">
+                                </div>
+                                <div class="form-group">
+                                    <label for="t-coleader">Co-Leader Name</label>
+                                    <input type="text" id="t-coleader" placeholder="Co-leader name (optional)">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Drivers <span style="font-weight:400;text-transform:none;font-size:.65rem">(optional — up to 4 additional)</span></label>
+                                <div style="display:flex;flex-wrap:wrap;gap:.5rem;">
+                                    <input type="text" class="t-driver-input" placeholder="Driver name" style="flex:1;min-width:140px;">
+                                    <input type="text" class="t-driver-input" placeholder="Driver name" style="flex:1;min-width:140px;">
+                                    <input type="text" class="t-driver-input" placeholder="Driver name" style="flex:1;min-width:140px;">
+                                    <input type="text" class="t-driver-input" placeholder="Driver name" style="flex:1;min-width:140px;">
+                                </div>
+                            </div>
                             <input type="hidden" id="t-editing">
                             <div class="form-actions">
                                 <button class="btn btn-primary" id="saveTeamBtn">Save Team</button>
@@ -118,59 +136,13 @@
                             </div>
                         </div>
 
+                        <!-- Driver Manager (shown when managing a specific team's drivers) -->
+                        <div class="card" id="driver-manager" style="display:none;"></div>
+
                         <div class="card">
                             <h4>All Teams</h4>
                             <div class="mod-list" id="mod-team-list">
                                 <p class="empty-state">No teams yet.</p>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <!-- ===== DRIVERS ===== -->
-                    <div class="mod-section" id="sec-drivers">
-
-                        <div class="card">
-                            <h4>Create / Edit Driver</h4>
-                            <div class="fr2">
-                                <div class="form-group">
-                                    <label for="d-name">Driver Name</label>
-                                    <input type="text" id="d-name" placeholder="Driver name">
-                                </div>
-                                <div class="form-group">
-                                    <label for="d-car">Car</label>
-                                    <select id="d-car">
-                                        <option value="">— select car —</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="fr2">
-                                <div class="form-group">
-                                    <label for="d-role">Role</label>
-                                    <select id="d-role">
-                                        <option value="Member">Member</option>
-                                        <option value="Co-Leader">Co-Leader</option>
-                                        <option value="Leader">Leader</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="d-team">Team</label>
-                                    <select id="d-team">
-                                        <option value="">— select team —</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <input type="hidden" id="d-editing">
-                            <div class="form-actions">
-                                <button class="btn btn-primary" id="saveDriverBtn">Save Driver</button>
-                                <button class="btn btn-ghost" id="clearDriverBtn">Clear</button>
-                            </div>
-                        </div>
-
-                        <div class="card">
-                            <h4>All Drivers</h4>
-                            <div class="mod-list" id="mod-driver-list">
-                                <p class="empty-state">No drivers yet.</p>
                             </div>
                         </div>
 
@@ -247,7 +219,7 @@
                     <!-- ===== BATTLES ===== -->
                     <div class="mod-section" id="sec-battles">
                         <div class="card">
-                            <h4>Create Battle</h4>
+                            <h4 style="font-size:1.3rem;margin-bottom:1rem;padding-bottom:.5rem;border-bottom:1px solid var(--border);">Create Battle</h4>
                             <div class="info-box">Create a live team battle with ban/pick integration. A banpick session link will be generated for the teams.</div>
                             <div class="fr2">
                                 <div class="form-group">
@@ -275,11 +247,11 @@
                             </div>
                         </div>
                         <div class="card">
-                            <h4>Active Battles</h4>
+                            <h4 style="font-size:1.3rem;margin-bottom:1rem;padding-bottom:.5rem;border-bottom:1px solid var(--border);">Active Battles</h4>
                             <div class="mod-list" id="active-battle-list"><p class="empty-state">No active battles.</p></div>
                         </div>
                         <div class="card">
-                            <h4>Recent Battles</h4>
+                            <h4 style="font-size:1.3rem;margin-bottom:1rem;padding-bottom:.5rem;border-bottom:1px solid var(--border);">Recent Battles</h4>
                             <div class="mod-list" id="recent-battle-list"><p class="empty-state">Loading...</p></div>
                         </div>
                     </div>

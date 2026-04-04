@@ -156,7 +156,6 @@ function toggleExpand(tbody, tr, expTr, team, mode) {
       driverHtml += `<div class="driver-row">
         <span class="role-pill ${rc}">${d.role || 'Member'}</span>
         <span>${d.name}</span>
-        <span class="driver-car">${d.car || ''}</span>
       </div>`;
     });
   } else {
@@ -164,26 +163,26 @@ function toggleExpand(tbody, tr, expTr, team, mode) {
   }
   driverHtml += '</div>';
 
-  // History section
-  const histTitle = mode === 'position' ? 'Position History' : 'CRP History';
-  let histHtml = `<div class="exp-section"><h4>${histTitle}</h4>`;
+  // History section — always shows both position and CRP changes
+  let histHtml = `<div class="exp-section"><h4>Match History</h4>`;
   if (hist.length) {
     hist.slice(0, 10).forEach(m => {
       const bc = m.result === 'Win' ? 'win' : 'loss';
       const ts = m.timestamp ? (typeof m.timestamp === 'string' ? m.timestamp.split('T')[0] :
         m.timestamp.toDate ? m.timestamp.toDate().toLocaleDateString('en-US', {month:'short', day:'numeric'}) : '') : '';
 
-      if (mode === 'position') {
-        const posBefore = m.pos_before != null ? `#${m.pos_before}` : '\u2014';
-        const posAfter = m.pos_after != null ? `#${m.pos_after}` : '\u2014';
-        const posChanged = m.pos_before !== m.pos_after;
-        const posStr = posChanged
-          ? `<span style="color:var(--text-dim)">${posBefore}</span> <span style="color:var(--text-mute)">\u2192</span> <span style="color:${m.result === 'Win' ? 'var(--win)' : 'var(--loss)'}">${posAfter}</span>`
-          : `<span style="color:var(--text-mute)">${posAfter} (no change)</span>`;
-        histHtml += `<div class="match-row"><span class="res-pill ${bc}">${m.result}</span><span class="match-opp">vs ${m.opponent}</span><span class="match-crp" style="font-size:.82rem">${posStr}</span><span class="match-ts">${ts}</span></div>`;
-      } else {
-        histHtml += `<div class="match-row"><span class="res-pill ${bc}">${m.result}</span><span class="match-opp">vs ${m.opponent}</span><span class="match-crp">+${m.crp_gained || 0} CRP</span><span class="match-ts">${ts}</span></div>`;
-      }
+      // Position change
+      const posBefore = m.pos_before != null ? `#${m.pos_before}` : '\u2014';
+      const posAfter = m.pos_after != null ? `#${m.pos_after}` : '\u2014';
+      const posChanged = m.pos_before !== m.pos_after;
+      const posStr = posChanged
+        ? `<span style="color:var(--text-dim)">${posBefore}</span> <span style="color:var(--text-mute)">\u2192</span> <span style="color:${m.result === 'Win' ? 'var(--win)' : 'var(--loss)'}">${posAfter}</span>`
+        : `<span style="color:var(--text-mute)">${posAfter}</span>`;
+
+      // CRP change
+      const crpStr = `<span style="color:${m.result === 'Win' ? 'var(--win)' : 'var(--text-dim)'}">+${m.crp_gained || 0}</span>`;
+
+      histHtml += `<div class="match-row"><span class="res-pill ${bc}">${m.result}</span><span class="match-opp">vs ${m.opponent}</span><span class="match-crp" style="font-size:.82rem">${posStr}</span><span class="match-crp" style="font-size:.82rem">${crpStr} CRP</span><span class="match-ts">${ts}</span></div>`;
     });
   } else {
     histHtml += '<div style="color:var(--text-mute);font-size:.82rem">No matches logged yet.</div>';
@@ -236,11 +235,14 @@ async function loadRecentMatches() {
 
     const mapNames = match.maps?.map(m => m.mapName).join(', ') || '';
 
+    const tagA = match.teamATag ? ` [${match.teamATag}]` : '';
+    const tagB = match.teamBTag ? ` [${match.teamBTag}]` : '';
+
     card.innerHTML = `
       <div class="match-teams">
-        <span class="match-team ${isTeamAWinner ? 'winner' : 'loser'}">${match.teamAName}</span>
+        <span class="match-team ${isTeamAWinner ? 'winner' : 'loser'}">${match.teamAName}${tagA}</span>
         <span class="match-score">${match.score?.teamA ?? 0} \u2014 ${match.score?.teamB ?? 0}</span>
-        <span class="match-team ${!isTeamAWinner ? 'winner' : 'loser'}">${match.teamBName}</span>
+        <span class="match-team ${!isTeamAWinner ? 'winner' : 'loser'}">${match.teamBName}${tagB}</span>
       </div>
       <div class="match-meta">
         ${mapNames ? `<span class="match-maps">${mapNames}</span>` : ''}

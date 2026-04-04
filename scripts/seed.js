@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, setDoc, Timestamp } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, deleteDoc, getDocs, collection, Timestamp } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyA7kGIAULwsycGbcJa95RKwiLiEjQmFOSA",
@@ -24,9 +24,9 @@ const teams = [
     tag: 'MTD',
     captainDiscordId: '100000000000000001',
     roster: [
-      { name: 'Takumi', car: 'AE86', role: 'Leader', discordId: '100000000000000001' },
-      { name: 'Itsuki', car: 'AE85', role: 'Member', discordId: '100000000000000002' },
-      { name: 'Kenji', car: 'S14', role: 'Member', discordId: '100000000000000003' },
+      { name: 'Takumi', role: 'Leader', discordId: '100000000000000001' },
+      { name: 'Itsuki', role: 'Member', discordId: '100000000000000002' },
+      { name: 'Kenji', role: 'Member', discordId: '100000000000000003' },
     ],
     active: true,
   },
@@ -36,9 +36,9 @@ const teams = [
     tag: 'NKR',
     captainDiscordId: '200000000000000001',
     roster: [
-      { name: 'Nakazato', car: 'BNR32', role: 'Leader', discordId: '200000000000000001' },
-      { name: 'Shingo', car: 'EG6', role: 'Co-Leader', discordId: '200000000000000002' },
-      { name: 'Sayuki', car: 'NA6CE', role: 'Member', discordId: '200000000000000003' },
+      { name: 'Nakazato', role: 'Leader', discordId: '200000000000000001' },
+      { name: 'Shingo', role: 'Co-Leader', discordId: '200000000000000002' },
+      { name: 'Sayuki', role: 'Member', discordId: '200000000000000003' },
     ],
     active: true,
   },
@@ -48,8 +48,8 @@ const teams = [
     tag: 'AKG',
     captainDiscordId: '300000000000000001',
     roster: [
-      { name: 'Ryosuke', car: 'FC3S', role: 'Leader', discordId: '300000000000000001' },
-      { name: 'Keisuke', car: 'FD3S', role: 'Co-Leader', discordId: '300000000000000002' },
+      { name: 'Ryosuke', role: 'Leader', discordId: '300000000000000001' },
+      { name: 'Keisuke', role: 'Co-Leader', discordId: '300000000000000002' },
     ],
     active: true,
   },
@@ -59,10 +59,10 @@ const teams = [
     tag: 'PJD',
     captainDiscordId: '400000000000000001',
     roster: [
-      { name: 'Tomoyuki', car: 'CE9A', role: 'Leader', discordId: '400000000000000001' },
-      { name: 'Kai', car: 'SW20', role: 'Co-Leader', discordId: '400000000000000002' },
-      { name: 'Wataru', car: 'AE86', role: 'Member', discordId: '400000000000000003' },
-      { name: 'Sakamoto', car: 'DC2', role: 'Member', discordId: '400000000000000004' },
+      { name: 'Tomoyuki', role: 'Leader', discordId: '400000000000000001' },
+      { name: 'Kai', role: 'Co-Leader', discordId: '400000000000000002' },
+      { name: 'Wataru', role: 'Member', discordId: '400000000000000003' },
+      { name: 'Sakamoto', role: 'Member', discordId: '400000000000000004' },
     ],
     active: true,
   },
@@ -72,8 +72,8 @@ const teams = [
     tag: 'SST',
     captainDiscordId: '500000000000000001',
     roster: [
-      { name: 'Iketani', car: 'S14', role: 'Leader', discordId: '500000000000000001' },
-      { name: 'Yuichi', car: 'RPS13', role: 'Co-Leader', discordId: '500000000000000002' },
+      { name: 'Iketani', role: 'Leader', discordId: '500000000000000001' },
+      { name: 'Yuichi', role: 'Co-Leader', discordId: '500000000000000002' },
     ],
     active: true,
   },
@@ -83,9 +83,9 @@ const teams = [
     tag: 'EMP',
     captainDiscordId: '600000000000000001',
     roster: [
-      { name: 'Sudo', car: 'CN9A', role: 'Leader', discordId: '600000000000000001' },
-      { name: 'Kyoichi', car: 'CE9A', role: 'Co-Leader', discordId: '600000000000000002' },
-      { name: 'Seiji', car: 'JZA80', role: 'Member', discordId: '600000000000000003' },
+      { name: 'Sudo', role: 'Leader', discordId: '600000000000000001' },
+      { name: 'Kyoichi', role: 'Co-Leader', discordId: '600000000000000002' },
+      { name: 'Seiji', role: 'Member', discordId: '600000000000000003' },
     ],
     active: true,
   },
@@ -95,8 +95,8 @@ const teams = [
     tag: 'IBL',
     captainDiscordId: '700000000000000001',
     roster: [
-      { name: 'Mako', car: 'NA6CE', role: 'Leader', discordId: '700000000000000001' },
-      { name: 'Sayuki', car: 'NA6CE', role: 'Co-Leader', discordId: '700000000000000002' },
+      { name: 'Mako', role: 'Leader', discordId: '700000000000000001' },
+      { name: 'Sayuki', role: 'Co-Leader', discordId: '700000000000000002' },
     ],
     active: true,
   },
@@ -106,8 +106,8 @@ const teams = [
     tag: 'TSJ',
     captainDiscordId: '800000000000000001',
     roster: [
-      { name: 'Go', car: 'EA11R', role: 'Leader', discordId: '800000000000000001' },
-      { name: 'Shinigami', car: 'AE86', role: 'Member', discordId: '800000000000000002' },
+      { name: 'Go', role: 'Leader', discordId: '800000000000000001' },
+      { name: 'Shinigami', role: 'Member', discordId: '800000000000000002' },
     ],
     active: true,
   },
@@ -117,8 +117,8 @@ const teams = [
     tag: 'TDS',
     captainDiscordId: '900000000000000001',
     roster: [
-      { name: 'Daiki', car: 'NA1', role: 'Leader', discordId: '900000000000000001' },
-      { name: 'Smiley', car: 'DC2', role: 'Member', discordId: '900000000000000002' },
+      { name: 'Daiki', role: 'Leader', discordId: '900000000000000001' },
+      { name: 'Smiley', role: 'Member', discordId: '900000000000000002' },
     ],
     active: true,
   },
@@ -128,8 +128,8 @@ const teams = [
     tag: 'SBR',
     captainDiscordId: '110000000000000001',
     roster: [
-      { name: 'Hojo', car: 'GC8F', role: 'Leader', discordId: '110000000000000001' },
-      { name: 'Fumihiro', car: 'FC3S', role: 'Member', discordId: '110000000000000002' },
+      { name: 'Hojo', role: 'Leader', discordId: '110000000000000001' },
+      { name: 'Fumihiro', role: 'Member', discordId: '110000000000000002' },
     ],
     active: true,
   },
@@ -139,8 +139,8 @@ const teams = [
     tag: 'RNS',
     captainDiscordId: '120000000000000001',
     roster: [
-      { name: 'Amemiya', car: 'FD3S', role: 'Leader', discordId: '120000000000000001' },
-      { name: 'Kosuke', car: 'FC3S', role: 'Member', discordId: '120000000000000002' },
+      { name: 'Amemiya', role: 'Leader', discordId: '120000000000000001' },
+      { name: 'Kosuke', role: 'Member', discordId: '120000000000000002' },
     ],
     active: true,
   },
@@ -150,7 +150,7 @@ const teams = [
     tag: 'NWC',
     captainDiscordId: '130000000000000001',
     roster: [
-      { name: 'Rin', car: 'BNR32', role: 'Leader', discordId: '130000000000000001' },
+      { name: 'Rin', role: 'Leader', discordId: '130000000000000001' },
     ],
     active: true,
   },
@@ -489,7 +489,26 @@ const matches = [
 // Seed Firestore
 // ---------------------------------------------------------------------------
 
+async function clearCollection(name) {
+  const snap = await getDocs(collection(db, name));
+  for (const d of snap.docs) {
+    await deleteDoc(doc(db, name, d.id));
+  }
+  console.log(`  Cleared ${snap.size} docs from ${name}`);
+}
+
 async function seed() {
+  // Clear existing data
+  console.log('Clearing existing data...');
+  await clearCollection('teams');
+  await clearCollection('standings');
+  await clearCollection('matches');
+  await clearCollection('sessions');
+
+  // Build team ID -> tag lookup
+  const tagMap = {};
+  teams.forEach(t => { tagMap[t.id] = t.tag; });
+
   console.log('Seeding teams...');
   for (const team of teams) {
     const { id, ...data } = team;
@@ -508,6 +527,9 @@ async function seed() {
   console.log('Seeding matches...');
   for (const match of matches) {
     const { id, ...data } = match;
+    // Add team tags
+    data.teamATag = tagMap[data.teamA] || '';
+    data.teamBTag = tagMap[data.teamB] || '';
     await setDoc(doc(db, 'matches', id), data);
     console.log(`  + matches/${id}`);
   }

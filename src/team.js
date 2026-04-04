@@ -1,5 +1,6 @@
 import './nav.js';
 import { db, collection, doc, getDoc, getDocs, query, orderBy, where } from './firebase.js';
+import { getTier } from './crp.js';
 
 const teamTitle = document.getElementById('teamTitle');
 const teamSubtitle = document.getElementById('teamSubtitle');
@@ -37,7 +38,7 @@ async function loadTeam() {
 
   // Update page title
   teamTitle.innerHTML = `<span>${team.tag}</span> ${team.name}`;
-  document.title = `${team.name} — IU Team Battles`;
+  document.title = `${team.name} [${team.tag}] — IU Team Battles`;
 
   const winPct = standings && (standings.wins + standings.losses > 0)
     ? Math.round((standings.wins / (standings.wins + standings.losses)) * 100)
@@ -50,11 +51,14 @@ async function loadTeam() {
         : '-'
     : '-';
 
+  const tier = standings ? getTier(standings.position) : 'Unranked';
+  const posStr = standings?.position ? `#${standings.position}` : 'Unranked';
+
   teamSubtitle.textContent = standings
-    ? `Rank #${standings.rank} — ${standings.wins}W ${standings.losses}L (${winPct}%) — ${streak} streak`
+    ? `${posStr} · ${tier} — ${standings.wins}W ${standings.losses}L (${winPct}%) — ${streak} streak — ${standings.crp || 0} CRP`
     : 'No matches played';
 
-  // Get matches for this team
+  // Get matches for this team (only completed)
   const matchesA = await getDocs(query(
     collection(db, 'matches'),
     where('teamA', '==', team.id),
@@ -69,7 +73,8 @@ async function loadTeam() {
   const allMatches = [
     ...matchesA.docs.map(d => ({ id: d.id, ...d.data() })),
     ...matchesB.docs.map(d => ({ id: d.id, ...d.data() }))
-  ].sort((a, b) => (b.date?.seconds || 0) - (a.date?.seconds || 0));
+  ].filter(m => m.status === 'completed')
+   .sort((a, b) => (b.date?.seconds || 0) - (a.date?.seconds || 0));
 
   // Render
   let html = '';
@@ -79,7 +84,8 @@ async function loadTeam() {
     html += '<h3 class="section-header">Roster</h3>';
     html += '<div class="roster-grid">';
     team.roster.forEach(player => {
-      html += `<span class="roster-player">${player.name}</span>`;
+      const roleLabel = player.role === 'Leader' ? ' ★' : player.role === 'Co-Leader' ? ' ☆' : '';
+      html += `<span class="roster-player">${player.name}${roleLabel}</span>`;
     });
     html += '</div>';
   }
@@ -96,13 +102,15 @@ async function loadTeam() {
       const dateStr = match.date?.toDate
         ? match.date.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
         : '';
+      const tagA = match.teamATag ? ` [${match.teamATag}]` : '';
+      const tagB = match.teamBTag ? ` [${match.teamBTag}]` : '';
 
       html += `
         <div class="match-card" onclick="window.location.href='/match?id=${match.id}'">
           <div class="match-teams">
-            <span class="match-team ${isTeamAWinner ? 'winner' : 'loser'}">${match.teamAName}</span>
+            <span class="match-team ${isTeamAWinner ? 'winner' : 'loser'}">${match.teamAName}${tagA}</span>
             <span class="match-score">${match.score?.teamA ?? 0} — ${match.score?.teamB ?? 0}</span>
-            <span class="match-team ${!isTeamAWinner ? 'winner' : 'loser'}">${match.teamBName}</span>
+            <span class="match-team ${!isTeamAWinner ? 'winner' : 'loser'}">${match.teamBName}${tagB}</span>
           </div>
           <span class="match-date">${dateStr}</span>
         </div>

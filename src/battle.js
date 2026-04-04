@@ -106,8 +106,10 @@ function render() {
   const battleScoreEl = document.getElementById('battleScore');
   const battleStatusEl = document.getElementById('battleStatus');
 
-  if (teamANameEl) teamANameEl.textContent = matchData.teamAName || '—';
-  if (teamBNameEl) teamBNameEl.textContent = matchData.teamBName || '—';
+  const tagA = matchData.teamATag ? ` [${matchData.teamATag}]` : '';
+  const tagB = matchData.teamBTag ? ` [${matchData.teamBTag}]` : '';
+  if (teamANameEl) teamANameEl.textContent = (matchData.teamAName || '—') + tagA;
+  if (teamBNameEl) teamBNameEl.textContent = (matchData.teamBName || '—') + tagB;
 
   const scoreA = matchData.liveScore?.teamA || 0;
   const scoreB = matchData.liveScore?.teamB || 0;
@@ -529,9 +531,9 @@ async function doFinalize(winnerId) {
 
     // Show CRP result
     const crpEl = document.getElementById('crpResult');
-    crpEl.innerHTML = `<div class="card" style="max-width:500px;margin:0 auto;">
-      <h4 style="color:var(--accent);text-align:center;">Match Finalized</h4>
-      <div style="text-align:center;padding:1rem 0;">
+    crpEl.innerHTML = `<div class="card" style="max-width:500px;margin:0 auto;text-align:center;">
+      <h4 style="color:var(--accent);margin-bottom:1rem;">Match Finalized</h4>
+      <div style="padding:1rem 0;">
         <div style="font-size:1.1rem;margin-bottom:.5rem;"><b>${winnerName}</b> +${result.winnerCRP} CRP</div>
         <div style="font-size:.9rem;color:var(--text-dim);">${loserName} +${result.loserCRP} CRP</div>
         ${result.positionShifted ? '<div style="color:var(--accent);margin-top:.5rem;font-size:.88rem;">Position shift applied</div>' : ''}

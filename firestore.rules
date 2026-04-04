@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Public read for all game data
+    match /teams/{teamId} {
+      allow read: if true;
+      allow write: if isStaff();
+    }
+
+    match /standings/{teamId} {
+      allow read: if true;
+      allow write: if isStaff();
+    }
+
+    match /matches/{matchId} {
+      allow read: if true;
+      allow write: if isStaff();
+    }
+
+    // Banpick sessions need public write (both teams interact)
+    match /sessions/{sessionId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Webhook config — admin only
+    match /config/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Staff collection — staff can read, admin can write
+    match /staff/{userId} {
+      allow read: if isStaff();
+      allow write: if isAdmin();
+    }
+
+    // Invites — any authenticated user can read (to redeem), admin can create/delete
+    match /invites/{code} {
+      allow read: if request.auth != null;
+      allow create: if isAdmin();
+      allow update: if request.auth != null;
+      allow delete: if isAdmin();
+    }
+
+    function isStaff() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/staff/$(request.auth.uid));
+    }
+
+    function isAdmin() {
+      return isStaff()
+        && get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.role == 'admin';
+    }
+  }
+}
