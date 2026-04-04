@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IUR League</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0a0a0a;
+    --surface:   #111111;
+    --panel:     #181818;
+    --border:    #222222;
+    --header-bg: #0d0d0d;
+    --row-hover: #161616;
+    --gold:      #e8410a;
+    --gold-dim:  #7a2005;
+    --accent:    #ff5520;
+    --red:       #e83232;
+    --green:     #3cb371;
+    --text:      #ffffff;
+    --text-dim:  #888888;
+    --text-mute: #444444;
+    --win:       #3cb371;
+    --loss:      #e84040;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:var(--bg); color:var(--text);
+    font-family:'Barlow',sans-serif; min-height:100vh;
+    background-image:radial-gradient(ellipse 70% 30% at 50% 0%,rgba(180,120,30,.07) 0%,transparent 60%);
+  }
+
+  /* HEADER */
+  header {
+    background:var(--header-bg); border-bottom:1px solid var(--border);
+    padding:0 2rem; display:flex; align-items:center; justify-content:space-between;
+    height:60px; position:sticky; top:0; z-index:200;
+    box-shadow:0 2px 12px rgba(0,0,0,.6);
+  }
+  .logo { font-family:'Bebas Neue',sans-serif; font-size:1.7rem; letter-spacing:.15em; color:var(--text); }
+  .logo strong { color:var(--accent); }
+  .logo em { color:var(--text-dim); font-style:normal; font-size:.75rem; margin-left:.5rem; letter-spacing:.08em; vertical-align:middle; }
+  nav { display:flex; gap:.2rem; align-items:center; }
+  nav button {
+    background:none; border:none; color:var(--text-dim);
+    font-family:'Barlow Condensed',sans-serif; font-size:.9rem; font-weight:700;
+    letter-spacing:.1em; text-transform:uppercase; padding:.45rem 1rem;
+    cursor:pointer; border-radius:3px; transition:all .12s; position:relative;
+  }
+  nav button:hover { color:var(--text); background:rgba(255,255,255,.04); }
+  nav button.active { color:var(--accent); background:rgba(212,160,53,.08); }
+  nav button.active::after { content:''; position:absolute; bottom:-1px; left:0; right:0; height:2px; background:var(--accent); border-radius:2px 2px 0 0; }
+  .nav-sep { width:1px; height:24px; background:var(--border); margin:0 .5rem; }
+  .mod-btn { border:1px solid var(--gold-dim) !important; color:var(--gold) !important; }
+  .mod-btn:hover { background:rgba(200,146,42,.12) !important; }
+  .mod-btn.active { background:rgba(200,146,42,.15) !important; color:var(--accent) !important; }
+
+  /* LAYOUT */
+  main { max-width:1140px; margin:0 auto; padding:2rem 1.5rem; }
+  .page { display:none; }
+  .page.active { display:block; }
+  .page-title { font-family:'Bebas Neue',sans-serif; font-size:2.6rem; letter-spacing:.1em; color:var(--text); line-height:1; }
+  .page-sub { color:var(--text-dim); font-size:.83rem; letter-spacing:.04em; margin:.3rem 0 1.8rem; }
+
+  /* TABLE */
+  .table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:5px; overflow:hidden; }
+  table { width:100%; border-collapse:collapse; }
+  thead tr { background:var(--header-bg); border-bottom:2px solid var(--border); }
+  thead th { font-family:'Barlow Condensed',sans-serif; font-size:.75rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--text-dim); padding:.8rem 1.1rem; text-align:left; }
+  thead th.r { text-align:right; }
+  thead th.c { text-align:center; }
+  tbody tr.data-row { border-bottom:1px solid var(--border); cursor:pointer; transition:background .1s; }
+  tbody tr.data-row:hover { background:var(--row-hover); }
+  tbody td { padding:.9rem 1.1rem; font-size:.93rem; }
+  td.r { text-align:right; }
+  td.c { text-align:center; }
+
+  .rank-cell { font-family:'Bebas Neue',sans-serif; font-size:1.25rem; color:var(--text-mute); width:52px; }
+  .rank-cell.r1 { color:var(--accent); border-left:2px solid var(--accent); padding-left:.5rem; }
+  .rank-cell.r2 { color:#C0C0C0; }
+  .rank-cell.r3 { color:#CD7F32; }
+
+  .tier-badge { display:inline-block; font-family:'Barlow Condensed',sans-serif; font-size:.68rem; font-weight:700; letter-spacing:.06em; padding:.1rem .38rem; border-radius:3px; margin-right:.4rem; vertical-align:middle; }
+  .tier-Adept        { background:rgba(200,146,42,.2);   color:#d4a035; border:1px solid rgba(200,146,42,.35); }
+  .tier-Proficient   { background:rgba(80,140,200,.2);   color:#6aaad4; border:1px solid rgba(80,140,200,.35); }
+  .tier-Intermediate { background:rgba(100,170,100,.2);  color:#7aba7a; border:1px solid rgba(100,170,100,.35); }
+  .tier-Novice       { background:rgba(160,120,80,.2);   color:#b8906a; border:1px solid rgba(160,120,80,.35); }
+  .tier-Unranked     { background:rgba(100,100,100,.2);  color:#888;    border:1px solid rgba(120,120,120,.3); }
+
+  .tag-badge { display:inline-block; background:rgba(232,65,10,.12); border:1px solid var(--gold-dim); color:var(--accent); font-family:'Barlow Condensed',sans-serif; font-size:.7rem; font-weight:700; letter-spacing:.07em; padding:.08rem .35rem; border-radius:3px; margin-right:.4rem; }
+  .team-name { font-weight:700; font-size:.97rem; }
+  .team-sub  { color:var(--text-dim); font-size:.78rem; margin-top:.1rem; }
+  .crp-val   { font-family:'Bebas Neue',sans-serif; font-size:1.15rem; color:var(--accent); letter-spacing:.04em; }
+  .wl-cell   { font-family:'Barlow Condensed',sans-serif; font-weight:600; font-size:.93rem; }
+  .wl-cell .w { color:var(--win); }
+  .wl-cell .s { color:var(--text-mute); margin:0 2px; }
+  .wl-cell .l { color:var(--loss); }
+  .streak-pill { display:inline-flex; align-items:center; gap:.25rem; font-family:'Barlow Condensed',sans-serif; font-size:.85rem; font-weight:700; color:var(--win); }
+
+  /* EXPAND */
+  tr.expand-row td { padding:0; background:var(--panel); }
+  .expand-inner { padding:1.2rem 1.4rem; display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; border-top:1px solid var(--border); }
+  .exp-section h4 { font-family:'Barlow Condensed',sans-serif; font-size:.72rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--text-mute); margin-bottom:.65rem; }
+  .driver-row { display:flex; align-items:center; gap:.6rem; padding:.38rem 0; border-bottom:1px solid var(--border); font-size:.86rem; }
+  .driver-row:last-child { border-bottom:none; }
+  .role-pill { font-size:.68rem; font-weight:700; letter-spacing:.05em; padding:.08rem .32rem; border-radius:3px; background:var(--border); color:var(--text-dim); }
+  .role-pill.leader   { background:rgba(200,146,42,.22); color:var(--gold); }
+  .role-pill.coleader { background:rgba(200,146,42,.1);  color:var(--gold-dim); }
+  .driver-car { margin-left:auto; color:var(--text-dim); font-size:.8rem; }
+  .match-row { display:flex; align-items:center; gap:.7rem; padding:.32rem 0; border-bottom:1px solid var(--border); font-size:.83rem; }
+  .match-row:last-child { border-bottom:none; }
+  .res-pill { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:.72rem; letter-spacing:.05em; padding:.08rem .38rem; border-radius:3px; min-width:30px; text-align:center; }
+  .res-pill.win  { background:rgba(76,175,114,.18); color:var(--win); }
+  .res-pill.loss { background:rgba(192,80,80,.18);  color:var(--loss); }
+  .match-opp { flex:1; }
+  .match-crp { color:var(--accent); font-weight:600; font-size:.8rem; }
+  .match-ts  { color:var(--text-mute); font-size:.73rem; }
+  .subteam-row { display:flex; align-items:center; gap:.5rem; padding:.3rem 0; border-bottom:1px solid var(--border); font-size:.84rem; color:var(--text-dim); }
+  .subteam-row:last-child { border-bottom:none; }
+  .empty-state { text-align:center; padding:3.5rem 2rem; color:var(--text-mute); font-size:.88rem; letter-spacing:.05em; }
+
+  /* MOD */
+  .mod-login-wrap { max-width:400px; margin:4rem auto; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:1.5rem; margin-bottom:1.2rem; }
+  .card h3 { font-family:'Bebas Neue',sans-serif; font-size:1.25rem; letter-spacing:.08em; color:var(--accent); border-bottom:1px solid var(--border); padding-bottom:.7rem; margin-bottom:1.2rem; }
+  .mod-grid { display:grid; grid-template-columns:220px 1fr; gap:1.25rem; align-items:start; }
+  .mod-sidebar { background:var(--surface); border:1px solid var(--border); border-radius:5px; overflow:hidden; position:sticky; top:72px; }
+  .mod-sidebar-hd { background:var(--header-bg); padding:.75rem 1rem; font-family:'Barlow Condensed',sans-serif; font-size:.72rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--text-mute); border-bottom:1px solid var(--border); }
+  .mod-nav { display:block; width:100%; background:none; border:none; border-bottom:1px solid var(--border); text-align:left; padding:.8rem 1rem; color:var(--text-dim); font-family:'Barlow',sans-serif; font-size:.88rem; cursor:pointer; transition:all .1s; }
+  .mod-nav:last-child { border-bottom:none; }
+  .mod-nav:hover { background:rgba(255,255,255,.03); color:var(--text); }
+  .mod-nav.active { background:rgba(212,160,53,.07); color:var(--accent); border-left:2px solid var(--accent); }
+  .mod-section { display:none; }
+  .mod-section.active { display:block; }
+
+  /* FORMS */
+  .form-group { margin-bottom:1.1rem; }
+  label { display:block; font-family:'Barlow Condensed',sans-serif; font-size:.72rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--text-dim); margin-bottom:.35rem; }
+  input[type=text],input[type=password],input[type=number],select,textarea { width:100%; background:var(--panel); border:1px solid var(--border); border-radius:4px; color:var(--text); font-family:'Barlow',sans-serif; font-size:.92rem; padding:.6rem .8rem; outline:none; transition:border-color .12s; }
+  input:focus,select:focus,textarea:focus { border-color:var(--gold-dim); }
+  select option { background:var(--panel); }
+  textarea { resize:vertical; min-height:70px; }
+  .fr2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+  .fr3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem; }
+
+  .btn { display:inline-block; cursor:pointer; border:none; border-radius:4px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:.88rem; letter-spacing:.1em; text-transform:uppercase; padding:.6rem 1.4rem; transition:all .12s; }
+  .btn-primary { background:var(--gold); color:#1a0e04; }
+  .btn-primary:hover { background:var(--accent); }
+  .btn-danger  { background:rgba(184,50,50,.18); border:1px solid rgba(184,50,50,.4); color:var(--red); }
+  .btn-danger:hover { background:rgba(184,50,50,.32); }
+  .btn-ghost   { background:var(--panel); border:1px solid var(--border); color:var(--text-dim); }
+  .btn-ghost:hover { color:var(--text); border-color:var(--text-mute); }
+  .btn-sm  { font-size:.75rem; padding:.35rem .75rem; }
+  .btn-full{ width:100%; display:block; text-align:center; }
+  .form-actions { display:flex; gap:.7rem; margin-top:1.1rem; flex-wrap:wrap; }
+  .err-msg { color:var(--red); font-size:.8rem; margin-top:.4rem; display:none; }
+
+  .info-box { background:rgba(212,160,53,.06); border:1px solid var(--gold-dim); border-radius:4px; padding:.75rem 1rem; font-size:.82rem; color:var(--text-dim); margin-bottom:1.1rem; line-height:1.5; }
+  .info-box b { color:var(--accent); }
+
+  .crp-preview { background:var(--panel); border:1px solid var(--border); border-radius:4px; padding:.75rem 1rem; margin-top:1rem; display:none; }
+  .crp-preview h5 { font-family:'Barlow Condensed',sans-serif; font-size:.72rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--text-mute); margin-bottom:.5rem; }
+  .crp-row { display:flex; justify-content:space-between; font-size:.85rem; padding:.18rem 0; }
+  .crp-row .cv { color:var(--accent); font-weight:700; font-family:'Barlow Condensed',sans-serif; font-size:1rem; }
+  .crp-div { height:1px; background:var(--border); margin:.4rem 0; }
+
+  .mod-list { display:flex; flex-direction:column; gap:.4rem; }
+  .mod-list-item { display:flex; align-items:center; gap:.7rem; padding:.65rem .9rem; background:var(--panel); border:1px solid var(--border); border-radius:4px; font-size:.87rem; }
+  .ml-name { flex:1; font-weight:600; }
+  .ml-info { color:var(--text-dim); font-size:.8rem; }
+  .ml-crp  { color:var(--accent); font-family:'Barlow Condensed',sans-serif; font-weight:700; }
+
+  #toast { position:fixed; bottom:1.8rem; right:1.8rem; background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--green); padding:.8rem 1.15rem; border-radius:4px; font-size:.88rem; font-weight:500; z-index:999; opacity:0; transform:translateY(8px); transition:all .22s; pointer-events:none; max-width:340px; }
+  #toast.err  { border-left-color:var(--red); }
+  #toast.show { opacity:1; transform:translateY(0); }
+
+  @media(max-width:768px){
+    .mod-grid{grid-template-columns:1fr}
+    .fr2,.fr3{grid-template-columns:1fr}
+    .expand-inner{grid-template-columns:1fr}
+    .page-title{font-size:1.9rem}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><strong>IUR</strong> <em>LEAGUE</em></div>
+  <nav>
+    <button class="active" onclick="showPage('position',this)">Position</button>
+    <button onclick="showPage('crp',this)">CRP Rankings</button>
+    <div class="nav-sep"></div>
+    <button class="mod-btn" onclick="showPage('mod',this)">⚙ Mod Panel</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- POSITION -->
+  <div class="page active" id="page-position">
+    <div class="page-title">Position Leaderboard</div>
+    <div class="page-sub">Teams ranked by league position · Click a team to expand details</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th style="width:54px">#</th>
+          <th>Team</th>
+          <th class="c">Tier</th>
+          <th class="c">W / L</th>
+          <th class="c">Streak</th>
+          <th class="r">CRP</th>
+        </tr></thead>
+        <tbody id="pos-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- CRP -->
+  <div class="page" id="page-crp">
+    <div class="page-title">CRP Rankings</div>
+    <div class="page-sub">Teams ranked by total Competition Rating Points earned</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th style="width:54px">#</th>
+          <th>Team</th>
+          <th class="c">Tier</th>
+          <th class="c">W / L</th>
+          <th class="c">Streak</th>
+          <th class="r">CRP</th>
+        </tr></thead>
+        <tbody id="crp-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MOD -->
+  <div class="page" id="page-mod">
+    <div id="mod-login-view">
+      <div class="mod-login-wrap">
+        <div class="card">
+          <h3>Mod Panel Login</h3>
+          <p style="color:var(--text-dim);font-size:.85rem;margin-bottom:1.25rem">Enter the moderator password to continue.</p>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="mod-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')modLogin()">
+            <div class="err-msg" id="pw-err">Incorrect password.</div>
+          </div>
+          <button class="btn btn-primary btn-full" onclick="modLogin()">Login</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="mod-dash" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
+        <div>
+          <div class="page-title" style="font-size:2rem">Mod Panel</div>
+          <div class="page-sub" style="margin-bottom:0">Manage teams, drivers &amp; matches</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="modLogout()">Logout</button>
+      </div>
+      <div class="mod-grid">
+        <div class="mod-sidebar">
+          <div class="mod-sidebar-hd">Sections</div>
+          <button class="mod-nav active" onclick="showModSec('sec-teams',this)">🏁 Teams</button>
+          <button class="mod-nav" onclick="showModSec('sec-drivers',this)">👤 Drivers</button>
+          <button class="mod-nav" onclick="showModSec('sec-matches',this)">⚔ Log Match</button>
+          <button class="mod-nav" onclick="showModSec('sec-danger',this)">⚠ Delete</button>
+        </div>
+        <div>
+
+          <!-- TEAMS -->
+          <div class="mod-section active" id="sec-teams">
+            <div class="card">
+              <h3>Create / Edit Team</h3>
+              <div class="fr2">
+                <div class="form-group"><label>Team Name</label><input type="text" id="t-name" placeholder="e.g. Initial Unity"></div>
+                <div class="form-group"><label>Tag</label><input type="text" id="t-tag" placeholder="e.g. IU" maxlength="8"></div>
+              </div>
+              <div class="fr3">
+                <div class="form-group"><label>CRP</label><input type="number" id="t-crp" value="0" min="0"></div>
+                <div class="form-group"><label>Position <span style="font-weight:400;text-transform:none;font-size:.65rem">(blank = Unranked)</span></label><input type="number" id="t-pos" placeholder=""></div>
+                <div class="form-group"><label>Consec. Wins</label><input type="number" id="t-cw" value="0" min="0"></div>
+              </div>
+              <div class="fr2">
+                <div class="form-group"><label>Wins</label><input type="number" id="t-wins" value="0" min="0"></div>
+                <div class="form-group"><label>Losses</label><input type="number" id="t-losses" value="0" min="0"></div>
+              </div>
+              <div class="form-group">
+                <label>Parent Team <span style="font-weight:400;text-transform:none;font-size:.65rem">(makes this a sub-team)</span></label>
+                <select id="t-parent"><option value="">— none (standalone team) —</option></select>
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary" onclick="saveTeam()">Save Team</button>
+                <button class="btn btn-ghost" onclick="clearTeamForm()">Clear</button>
+              </div>
+            </div>
+            <div class="card">
+              <h3>All Teams</h3>
+              <div class="mod-list" id="mod-team-list"><div class="empty-state">No teams yet.</div></div>
+            </div>
+          </div>
+
+          <!-- DRIVERS -->
+          <div class="mod-section" id="sec-drivers">
+            <div class="card">
+              <h3>Create / Edit Driver</h3>
+              <div class="fr2">
+                <div class="form-group"><label>Driver Name</label><input type="text" id="d-name" placeholder="e.g. Lucky"></div>
+                <div class="form-group"><label>Car</label><select id="d-car">
+                    <option value="">— select car —</option>
+                    <option value="AE86">AE86</option>
+                    <option value="AP1">AP1</option>
+                    <option value="BNR32">BNR32</option>
+                    <option value="CE9A">CE9A</option>
+                    <option value="CN9A">CN9A</option>
+                    <option value="DC2">DC2</option>
+                    <option value="EA11R">EA11R</option>
+                    <option value="EG6">EG6</option>
+                    <option value="FC3S">FC3S</option>
+                    <option value="FD3S">FD3S</option>
+                    <option value="GC8F">GC8F</option>
+                    <option value="JZA80">JZA80</option>
+                    <option value="NA1">NA1</option>
+                    <option value="NA6CE">NA6CE</option>
+                    <option value="RPS13">RPS13</option>
+                    <option value="S14">S14</option>
+                    <option value="SW20">SW20</option>
+                    <option value="ZZW30">ZZW30</option>
+                  </select></div>
+              </div>
+              <div class="fr2">
+                <div class="form-group">
+                  <label>Role</label>
+                  <select id="d-role">
+                    <option value="Member">Member</option>
+                    <option value="Co-Leader">Co-Leader</option>
+                    <option value="Leader">Leader</option>
+                  </select>
+                </div>
+                <div class="form-group"><label>Primary Team <span style="font-weight:400;text-transform:none;font-size:.65rem">(drives for)</span></label><select id="d-team"><option value="">— no team —</option></select></div>
+              </div>
+              <div class="fr2">
+                <div class="form-group"><label>Secondary Team <span style="font-weight:400;text-transform:none;font-size:.65rem">(non-driver member)</span></label><select id="d-team2"><option value="">— none —</option></select></div>
+                <div class="form-group"><label>Tertiary Team <span style="font-weight:400;text-transform:none;font-size:.65rem">(non-driver member)</span></label><select id="d-team3"><option value="">— none —</option></select></div>
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary" onclick="saveDriver()">Save Driver</button>
+                <button class="btn btn-ghost" onclick="clearDriverForm()">Clear</button>
+              </div>
+            </div>
+            <div class="card">
+              <h3>All Drivers</h3>
+              <div class="mod-list" id="mod-driver-list"><div class="empty-state">No drivers yet.</div></div>
+            </div>
+          </div>
+
+          <!-- MATCHES -->
+          <div class="mod-section" id="sec-matches">
+            <div class="card">
+              <h3>Log Match</h3>
+              <div class="info-box" id="match-info-box">Select both teams to see tier info and CRP preview.</div>
+              <div class="fr2">
+                <div class="form-group"><label>Team A</label><select id="m-ta" onchange="onMatchChange()"><option value="">— select —</option></select></div>
+                <div class="form-group"><label>Team B</label><select id="m-tb" onchange="onMatchChange()"><option value="">— select —</option></select></div>
+              </div>
+              <div class="fr2">
+                <div class="form-group">
+                  <label>Winner</label>
+                  <select id="m-win" onchange="onMatchChange()">
+                    <option value="">— select winner —</option>
+                    <option value="A">Team A wins</option>
+                    <option value="B">Team B wins</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Home Map</label>
+                  <select id="m-home" onchange="onMatchChange()">
+                    <option value="none">No home map bonus</option>
+                    <option value="A">Team A on home map</option>
+                    <option value="B">Team B on home map</option>
+                    <option value="both">Both teams on home maps</option>
+                  </select>
+                </div>
+              </div>
+              <div class="crp-preview" id="crp-preview">
+                <h5>CRP Preview</h5>
+                <div id="crp-rows"></div>
+              </div>
+              <div class="form-actions" style="margin-top:1.25rem">
+                <button class="btn btn-primary" onclick="logMatch()">Log Match &amp; Apply</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- DELETE -->
+          <div class="mod-section" id="sec-danger">
+            <div class="card">
+              <h3>Season Reset</h3>
+              <div class="info-box">Resets <b>all teams</b>: clears match history, sets CRP to 0, resets W/L to 0/0 and streaks to 0. Positions and team/driver data are kept.</div>
+              <div class="form-actions"><button id="season-reset-btn" class="btn btn-danger" onclick="seasonReset()">Reset Season</button></div>
+            </div>
+            <div class="card">
+              <h3>Delete Team</h3>
+              <div class="form-group"><label>Select Team</label><select id="del-team"></select></div>
+              <div class="form-actions"><button id="del-team-btn" class="btn btn-danger" onclick="deleteTeam()">Delete Team</button></div>
+            </div>
+            <div class="card">
+              <h3>Delete Driver</h3>
+              <div class="form-group"><label>Select Driver</label><select id="del-driver"></select></div>
+              <div class="form-actions"><button id="del-driver-btn" class="btn btn-danger" onclick="deleteDriver()">Delete Driver</button></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+<div id="toast"></div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────
+const MOD_PASSWORD = "iur2025";
+
+// ─── CRP SYSTEM ───────────────────────────────────────
+function getTier(pos) {
+  if (pos == null) return "Unranked";
+  if (pos <= 5)    return "Adept";
+  if (pos <= 10)   return "Proficient";
+  if (pos <= 15)   return "Intermediate";
+  return "Novice";
+}
+
+const POS_RULES = {
+  1:  { win:32, loss:22, home:8,  streak:12, format:"BO5" },
+  2:  { win:25, loss:16, home:6,  streak:12, format:"BO5" },
+  3:  { win:20, loss:12, home:6,  streak:12, format:"BO5" },
+  4:  { win:15, loss:9,  home:5,  streak:12, format:"BO5" },
+  5:  { win:10, loss:7,  home:4,  streak:12, format:"BO3" },
+  6:  { win:8,  loss:5,  home:4,  streak:8,  format:"BO3" },
+  7:  { win:6,  loss:4,  home:3,  streak:8,  format:"BO3" },
+  8:  { win:6,  loss:4,  home:3,  streak:8,  format:"BO3" },
+  9:  { win:6,  loss:4,  home:3,  streak:8,  format:"BO3" },
+  10: { win:5,  loss:4,  home:3,  streak:8,  format:"BO3" },
+  11: { win:4,  loss:3,  home:3,  streak:6,  format:"BO3" },
+  12: { win:3,  loss:2,  home:2,  streak:6,  format:"BO3" },
+  13: { win:3,  loss:2,  home:2,  streak:6,  format:"BO3" },
+  14: { win:3,  loss:2,  home:2,  streak:6,  format:"BO3" },
+  15: { win:3,  loss:2,  home:2,  streak:6,  format:"BO3" },
+};
+const NOVICE_RULES = { win:2, loss:1, home:2, streak:4, format:"BO3" };
+
+function getRules(pos) {
+  if (pos == null) return NOVICE_RULES;
+  return POS_RULES[pos] || NOVICE_RULES;
+}
+
+// CRP calc — uses higher-ranked (lower pos number) team's rules as base
+// homeFor: 'winner'|'loser'|'both'|'none'
+function calcCRP(winner, loser, homeFor) {
+  // New logic: each team receives points based on the OPPONENT's position rules.
+  // Winner gets the loser's "win" value  (= what you earn for beating that team).
+  // Loser  gets the winner's "loss" value (= what you earn for losing to that team).
+  // Home bonus: each team uses the OPPONENT's home value.
+  // Streak bonus: winner uses the loser's streak value (earned by beating them).
+
+  const winnerRules = getRules(winner.position); // winner's own rules  (loser uses these)
+  const loserRules  = getRules(loser.position);  // loser's own rules   (winner uses these)
+
+  const winnerBase = loserRules.win;    // winner earns: "win CRP of the team they beat"
+  const loserBase  = winnerRules.loss;  // loser  earns: "loss CRP of the team they lost to"
+
+  // Home map bonus also uses the opponent's home value
+  const winnerHome = (homeFor === 'winner' || homeFor === 'both') ? loserRules.home  : 0;
+  const loserHome  = (homeFor === 'loser'  || homeFor === 'both') ? winnerRules.home : 0;
+
+  // Streak bonus uses the loser's streak value (prize for beating that tier)
+  const newStreak   = (winner.consecutive_wins || 0) + 1;
+  const streakBonus = (newStreak % 4 === 0) ? loserRules.streak : 0;
+
+  return {
+    winnerTotal: winnerBase + winnerHome + streakBonus,
+    loserTotal:  loserBase  + loserHome,
+    winnerBase, loserBase,
+    winnerHome, loserHome,
+    streakBonus, newStreak,
+    winnerRules, loserRules
+  };
+}
+
+// ─── STORAGE ──────────────────────────────────────────
+let isLoggedIn = false;
+const getTeams   = () => { try { return JSON.parse(localStorage.getItem('iur_teams')   || '[]'); } catch(e){ return []; } };
+const getDrivers = () => { try { return JSON.parse(localStorage.getItem('iur_drivers') || '[]'); } catch(e){ return []; } };
+const setTeams   = t  => localStorage.setItem('iur_teams',   JSON.stringify(t));
+const setDrivers = d  => localStorage.setItem('iur_drivers', JSON.stringify(d));
+
+// ─── NAV ──────────────────────────────────────────────
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (id === 'position') renderBoard('pos-tbody', positionSorted(), 'position');
+  if (id === 'crp')      renderBoard('crp-tbody', crpSorted(), 'crp');
+  if (id === 'mod' && isLoggedIn) refreshMod();
+}
+function showModSec(id, btn) {
+  document.querySelectorAll('.mod-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.mod-nav').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+// ─── AUTH ─────────────────────────────────────────────
+function modLogin() {
+  if (document.getElementById('mod-pw').value === MOD_PASSWORD) {
+    isLoggedIn = true;
+    document.getElementById('mod-login-view').style.display = 'none';
+    document.getElementById('mod-dash').style.display = 'block';
+    document.getElementById('pw-err').style.display = 'none';
+    refreshMod();
+  } else {
+    document.getElementById('pw-err').style.display = 'block';
+    document.getElementById('mod-pw').value = '';
+  }
+}
+function modLogout() {
+  isLoggedIn = false;
+  document.getElementById('mod-login-view').style.display = 'block';
+  document.getElementById('mod-dash').style.display = 'none';
+  document.getElementById('mod-pw').value = '';
+}
+
+// ─── TOAST ────────────────────────────────────────────
+let _tt;
+function toast(msg, err=false) {
+  const el = document.getElementById('toast');
+  clearTimeout(_tt);
+  el.textContent = msg;
+  el.className = 'show' + (err ? ' err' : '');
+  _tt = setTimeout(() => el.className = '', 3200);
+}
+
+// ─── SORTED LISTS ─────────────────────────────────────
+function positionSorted() {
+  const teams = getTeams();
+  // treat position 0 or null as unranked
+  const ranked   = teams.filter(t => t.position != null && t.position > 0).sort((a,b) => a.position - b.position);
+  const unranked = teams.filter(t => t.position == null || t.position <= 0);
+  return [...ranked, ...unranked];
+}
+function crpSorted() {
+  return getTeams().sort((a,b) => {
+    const crpDiff = (b.crp||0) - (a.crp||0);
+    if (crpDiff !== 0) return crpDiff;
+    // Tie-break: lower position number = higher rank; null/0 = last
+    const aPosValid = a.position != null && a.position > 0;
+    const bPosValid = b.position != null && b.position > 0;
+    if (aPosValid && bPosValid) return a.position - b.position;
+    if (aPosValid) return -1;
+    if (bPosValid) return 1;
+    return 0;
+  });
+}
+
+// ─── LEADERBOARD ──────────────────────────────────────
+// mode: 'position' = show actual position number in # col
+//       'crp'      = show CRP rank (1,2,3…) in # col
+function renderBoard(tbodyId, teams, mode) {
+  const tbody = document.getElementById(tbodyId);
+  if (!teams.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">No teams found. Add teams in the Mod Panel.</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = '';
+  teams.forEach((team, i) => {
+    const crpRank = i + 1; // always 1-based index for CRP board
+    const rc = crpRank===1?'r1':crpRank===2?'r2':crpRank===3?'r3':'';
+    const tier = getTier(team.position);
+    // For sub-teams: show parent tag + "ParentName · SubName"
+    const parentTeam = team.parent_team ? getTeams().find(t => t.name === team.parent_team) : null;
+    // Only show the team's own tag — no parent tag in the row
+    const tagH = team.tag ? `<span class="tag-badge">${team.tag}</span>` : '';
+    const displayName = team.name;
+    const subs = getTeams().filter(t => t.parent_team === team.name);
+    const subH = ''; // sub-teams now appear as their own rows
+    // Primary drivers (drive for this team) + non-driver members (listed in team2/team3)
+  const drivers    = getDrivers().filter(d => d.team  === team.name);
+  const nonDrivers = getDrivers().filter(d => (d.team2 === team.name || d.team3 === team.name));
+    const dPrev = drivers.map(d => d.name).join(', ');
+    const streak = team.consecutive_wins || 0;
+    const strH = streak >= 2
+      ? `<span class="streak-pill">🔥 ${streak}</span>`
+      : `<span style="color:var(--text-mute)">—</span>`;
+
+    // # column: position leaderboard shows actual position; CRP leaderboard shows CRP rank
+    let rankDisp;
+    if (mode === 'crp') {
+      rankDisp = crpRank;
+    } else {
+      // position board: show the team's actual stored position, or '—' if unranked
+      rankDisp = (team.position != null && team.position > 0) ? team.position : '—';
+    }
+    // rank color based on display rank
+    const displayNum = mode === 'crp' ? crpRank : (team.position || 999);
+    const rankClass = displayNum===1?'r1':displayNum===2?'r2':displayNum===3?'r3':'';
+
+    const tr = document.createElement('tr');
+    tr.className = 'data-row';
+    tr.innerHTML = `
+      <td class="rank-cell ${rankClass}">${rankDisp}</td>
+      <td>
+        <div>${tagH}<span class="team-name">${displayName}</span></div>
+        ${dPrev ? `<div class="team-sub">${dPrev}</div>` : ''}
+      </td>
+      <td class="c"><span class="tier-badge tier-${tier}">${tier}</span></td>
+      <td class="c"><span class="wl-cell"><span class="w">${team.wins||0}</span><span class="s">/</span><span class="l">${team.losses||0}</span></span></td>
+      <td class="c">${strH}</td>
+      <td class="r"><span class="crp-val">${team.crp||0}</span></td>`;
+    tr.onclick = () => toggleExp(tbody, tr, team, mode);
+
+    const expTr = document.createElement('tr');
+    expTr.className = 'expand-row';
+    expTr.style.display = 'none';
+    expTr.innerHTML = `<td colspan="6"><div class="expand-inner"></div></td>`;
+
+    tbody.appendChild(tr);
+    tbody.appendChild(expTr);
+  });
+}
+
+function toggleExp(tbody, tr, team, mode) {
+  const expTr = tr.nextElementSibling;
+  const open = expTr.style.display !== 'none';
+  tbody.querySelectorAll('.expand-row').forEach(r => r.style.display = 'none');
+  if (open) return;
+
+  const inner = expTr.querySelector('.expand-inner');
+  // Primary drivers (drive for this team) + non-driver members (listed in team2/team3)
+  const drivers    = getDrivers().filter(d => d.team  === team.name);
+  const nonDrivers = getDrivers().filter(d => (d.team2 === team.name || d.team3 === team.name));
+  const subs = getTeams().filter(t => t.parent_team === team.name);
+  const hist = team.match_history || [];
+
+  // Drivers + Sub-teams section
+  let dH = '<div class="exp-section"><h4>Drivers</h4>';
+  if (drivers.length) {
+    drivers.forEach(d => {
+      const rc = d.role==='Leader'?'leader':d.role==='Co-Leader'?'coleader':'';
+      dH += `<div class="driver-row"><span class="role-pill ${rc}">${d.role}</span><span>${d.name}</span><span class="driver-car">${d.car||''}</span></div>`;
+    });
+  } else dH += `<div style="color:var(--text-mute);font-size:.82rem">No drivers assigned.</div>`;
+  if (nonDrivers.length) {
+    dH += `<div style="margin-top:.6rem;padding-top:.6rem;border-top:1px solid var(--border)">`;
+    nonDrivers.forEach(d => {
+      dH += `<div class="driver-row"><span class="role-pill coleader">Co-Leader</span><span style="color:var(--text-dim)">${d.name}</span><span class="driver-car" style="font-size:.72rem;color:var(--text-mute)">non-driving</span></div>`;
+    });
+    dH += `</div>`;
+  }
+
+  // If this is a parent team: show its sub-teams
+  if (subs.length) {
+    dH += `<div style="margin-top:.85rem"><h4 style="font-family:'Barlow Condensed',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-mute);margin-bottom:.55rem">Sub-Teams</h4>`;
+    subs.forEach(s => {
+      const subDrivers = getDrivers().filter(d => d.team === s.name);
+      dH += `<div class="subteam-row">
+        <span class="tag-badge">${s.tag||'?'}</span>
+        <span style="font-weight:600;color:var(--text)">${s.name}</span>
+        <span style="color:var(--text-dim);font-size:.78rem;margin-left:.4rem">${subDrivers.map(d=>d.name).join(', ')||'no drivers'}</span>
+        <span style="margin-left:auto;color:var(--accent);font-family:'Barlow Condensed',sans-serif;font-weight:700">${s.crp||0} CRP</span>
+      </div>`;
+    });
+    dH += '</div>';
+  }
+  // If this is a sub-team: show the parent team info
+  if (team.parent_team) {
+    const parent = getTeams().find(t => t.name === team.parent_team);
+    if (parent) {
+      const parentDrivers = getDrivers().filter(d => d.team === parent.name);
+      dH += `<div style="margin-top:.85rem"><h4 style="font-family:'Barlow Condensed',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-mute);margin-bottom:.55rem">Main Team</h4>`;
+      dH += `<div class="subteam-row">
+        <span class="tag-badge">${parent.tag||'?'}</span>
+        <span style="font-weight:600;color:var(--text)">${parent.name}</span>
+        <span style="color:var(--text-dim);font-size:.78rem;margin-left:.4rem">${parentDrivers.map(d=>d.name).join(', ')||'no drivers'}</span>
+        <span style="margin-left:auto;color:var(--accent);font-family:'Barlow Condensed',sans-serif;font-weight:700">${parent.crp||0} CRP</span>
+      </div>`;
+      dH += '</div>';
+    }
+  }
+  dH += '</div>';
+
+  // History section — position board shows position changes, CRP board shows CRP
+  const histTitle = mode === 'position' ? 'Position History' : 'CRP History';
+  let hH = `<div class="exp-section"><h4>${histTitle}</h4>`;
+  if (hist.length) {
+    hist.slice(0,10).forEach(m => {
+      const bc = m.result==='Win'?'win':'loss';
+      const ts = m.timestamp ? m.timestamp.split('T')[0] : '';
+      if (mode === 'position') {
+        // Show position change: pos_before → pos_after
+        const posBefore = m.pos_before != null ? `#${m.pos_before}` : '—';
+        const posAfter  = m.pos_after  != null ? `#${m.pos_after}`  : '—';
+        const posChanged = m.pos_before !== m.pos_after;
+        const posStr = posChanged
+          ? `<span style="color:var(--text-dim)">${posBefore}</span> <span style="color:var(--text-mute)">→</span> <span style="color:${m.result==='Win'?'var(--win)':'var(--loss)'}">${posAfter}</span>`
+          : `<span style="color:var(--text-mute)">${posAfter} (no change)</span>`;
+        hH += `<div class="match-row"><span class="res-pill ${bc}">${m.result}</span><span class="match-opp">vs ${m.opponent}</span><span class="match-crp" style="font-size:.82rem">${posStr}</span><span class="match-ts">${ts}</span></div>`;
+      } else {
+        hH += `<div class="match-row"><span class="res-pill ${bc}">${m.result}</span><span class="match-opp">vs ${m.opponent}</span><span class="match-crp">+${m.crp_gained} CRP</span><span class="match-ts">${ts}</span></div>`;
+      }
+    });
+  } else hH += `<div style="color:var(--text-mute);font-size:.82rem">No matches logged yet.</div>`;
+  hH += '</div>';
+
+  inner.innerHTML = dH + hH;
+  expTr.style.display = 'table-row';
+}
+
+// ─── MOD REFRESH ──────────────────────────────────────
+function refreshMod() {
+  const teams   = getTeams();
+  const drivers = getDrivers();
+
+  // Team list
+  const tlEl = document.getElementById('mod-team-list');
+  if (teams.length) {
+    tlEl.innerHTML = `<div class="mod-list">` + teams.map((t,i) => `
+        <div class="mod-list-item">
+          <span class="tag-badge">${t.tag||'?'}</span>
+          <span class="ml-name">${t.name}${t.parent_team?` <span style="color:var(--text-mute);font-size:.75rem">(sub of ${t.parent_team})</span>`:''}</span>
+          <span class="ml-info">${t.wins||0}W / ${t.losses||0}L</span>
+          <span class="ml-crp">${t.crp||0} CRP</span>
+          <button class="btn btn-ghost btn-sm" data-team-idx="${i}" onclick="loadTeamFormByIdx(this)">Edit</button>
+        </div>`).join('') + `</div>`;
+  } else {
+    tlEl.innerHTML = '<div class="empty-state">No teams yet.</div>';
+  }
+
+  // Driver list
+  const dlEl = document.getElementById('mod-driver-list');
+  if (drivers.length) {
+    dlEl.innerHTML = `<div class="mod-list">` + drivers.map((d,i) => `
+        <div class="mod-list-item">
+          <span class="ml-name">${d.name}</span>
+          <span class="ml-info">${d.car||'—'}</span>
+          <span class="ml-info">${d.role}</span>
+          <span style="color:var(--accent);font-size:.82rem">${d.team||'—'}</span>
+          <button class="btn btn-ghost btn-sm" data-driver-idx="${i}" onclick="loadDriverFormByIdx(this)">Edit</button>
+        </div>`).join('') + `</div>`;
+  } else {
+    dlEl.innerHTML = '<div class="empty-state">No drivers yet.</div>';
+  }
+
+  // Selects — alphabetically sorted
+  const baseOpt = '<option value="">— none —</option>';
+  const sortedTeams   = [...teams].sort((a,b) => a.name.localeCompare(b.name));
+  const sortedDrivers = [...drivers].sort((a,b) => a.name.localeCompare(b.name));
+  const teamOpts   = sortedTeams.map(t => `<option value="${t.name}">${t.name}${t.position!=null?` (#${t.position}) — ${getTier(t.position)}`:' — Unranked'}</option>`).join('');
+  const driverOpts = sortedDrivers.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+
+  document.getElementById('t-parent').innerHTML   = baseOpt + teamOpts;
+  document.getElementById('d-team').innerHTML     = baseOpt + teamOpts;
+  document.getElementById('d-team2').innerHTML    = baseOpt + teamOpts;
+  document.getElementById('d-team3').innerHTML    = baseOpt + teamOpts;
+  document.getElementById('m-ta').innerHTML       = baseOpt + teamOpts;
+  document.getElementById('m-tb').innerHTML       = baseOpt + teamOpts;
+  document.getElementById('del-team').innerHTML   = teamOpts || baseOpt;
+  document.getElementById('del-driver').innerHTML = driverOpts || baseOpt;
+
+  onMatchChange();
+}
+
+// ─── MATCH PREVIEW ────────────────────────────────────
+function onMatchChange() {
+  const nameA = document.getElementById('m-ta').value;
+  const nameB = document.getElementById('m-tb').value;
+  const win   = document.getElementById('m-win').value;
+  const home  = document.getElementById('m-home').value;
+  const info  = document.getElementById('match-info-box');
+  const prev  = document.getElementById('crp-preview');
+
+  if (!nameA || !nameB) { prev.style.display='none'; info.innerHTML='Select both teams to see tier info and CRP preview.'; return; }
+  if (nameA === nameB)  { prev.style.display='none'; info.innerHTML='⚠ Select two different teams.'; return; }
+
+  const tA = getTeams().find(t=>t.name===nameA);
+  const tB = getTeams().find(t=>t.name===nameB);
+  if (!tA || !tB) return;
+
+  info.innerHTML = `<b>${tA.name}</b> — ${getTier(tA.position)} (Pos ${tA.position??'Unranked'}) · ${getRules(tA.position).format}<br><b>${tB.name}</b> — ${getTier(tB.position)} (Pos ${tB.position??'Unranked'}) · ${getRules(tB.position).format}`;
+
+  if (!win) { prev.style.display='none'; return; }
+
+  const winTeam  = win==='A' ? tA : tB;
+  const loseTeam = win==='A' ? tB : tA;
+  const wIsA = win==='A';
+
+  let homeFor = 'none';
+  if (home==='A')    homeFor = wIsA ? 'winner' : 'loser';
+  else if (home==='B') homeFor = wIsA ? 'loser' : 'winner';
+  else if (home==='both') homeFor = 'both';
+
+  const c = calcCRP(winTeam, loseTeam, homeFor);
+
+  let rows = `
+    <div class="crp-row"><span>${winTeam.name} wins (${loseTeam.name}’s win value)</span><span class="cv">+${c.winnerBase}</span></div>`;
+  if (c.winnerHome)   rows += `<div class="crp-row"><span>Home map bonus (${loseTeam.name}’s home value)</span><span class="cv">+${c.winnerHome}</span></div>`;
+  if (c.streakBonus)  rows += `<div class="crp-row"><span>Streak bonus x${c.newStreak} (${loseTeam.name}’s streak value)</span><span class="cv">+${c.streakBonus}</span></div>`;
+  rows += `<div class="crp-div"></div><div class="crp-row"><span><b>→ ${winTeam.name} total</b></span><span class="cv">+${c.winnerTotal}</span></div><div class="crp-div"></div>`;
+  rows += `<div class="crp-row"><span>${loseTeam.name} loses (${winTeam.name}’s loss value)</span><span class="cv">+${c.loserBase}</span></div>`;
+  if (c.loserHome)    rows += `<div class="crp-row"><span>Home map bonus (${winTeam.name}’s home value)</span><span class="cv">+${c.loserHome}</span></div>`;
+  rows += `<div class="crp-div"></div><div class="crp-row"><span><b>→ ${loseTeam.name} total</b></span><span class="cv">+${c.loserTotal}</span></div>`;
+
+  const wPos = winTeam.position, lPos = loseTeam.position;
+  if (wPos!=null && lPos!=null && wPos > lPos) {
+    rows += `<div class="crp-div"></div><div class="crp-row" style="color:var(--accent)"><span>📈 ${winTeam.name} moves to #${lPos} · teams #${lPos}–#${wPos-1} shift down</span><span></span></div>`;
+  } else if (wPos!=null && lPos!=null && wPos < lPos) {
+    rows += `<div class="crp-div"></div><div class="crp-row" style="color:var(--text-mute)"><span>No position change (winner already ranked higher)</span><span></span></div>`;
+  }
+
+  document.getElementById('crp-rows').innerHTML = rows;
+  prev.style.display = 'block';
+}
+
+// ─── LOG MATCH ────────────────────────────────────────
+function logMatch() {
+  const nameA = document.getElementById('m-ta').value;
+  const nameB = document.getElementById('m-tb').value;
+  const win   = document.getElementById('m-win').value;
+  const home  = document.getElementById('m-home').value;
+
+  if (!nameA || !nameB) { toast('Select both teams', true); return; }
+  if (nameA === nameB)  { toast('Teams must be different', true); return; }
+  if (!win)             { toast('Select a winner', true); return; }
+
+  const teams = getTeams();
+  const iA = teams.findIndex(t => t.name === nameA);
+  const iB = teams.findIndex(t => t.name === nameB);
+  if (iA<0||iB<0) { toast('Team not found', true); return; }
+
+  const wIsA = win === 'A';
+  const wi = wIsA ? iA : iB;
+  const li = wIsA ? iB : iA;
+
+  let homeFor = 'none';
+  if (home==='A')      homeFor = wIsA ? 'winner' : 'loser';
+  else if (home==='B') homeFor = wIsA ? 'loser'  : 'winner';
+  else if (home==='both') homeFor = 'both';
+
+  const c = calcCRP(teams[wi], teams[li], homeFor);
+  const ts = new Date().toISOString();
+
+  // Position shift: winner moves up to loser's position, everyone in between shifts down 1
+  const wPos = teams[wi].position;
+  const lPos = teams[li].position;
+  let shifted = false;
+  if (wPos != null && lPos != null && wPos > lPos) {
+    // Winner (lower rank, higher pos number) beats higher-ranked team
+    // Everyone with position >= lPos and < wPos shifts down by 1
+    teams.forEach((t, idx) => {
+      if (idx !== wi && t.position != null && t.position >= lPos && t.position < wPos) {
+        t.position += 1;
+      }
+    });
+    teams[wi].position = lPos;
+    shifted = true;
+  }
+
+  // Apply CRP & stats
+  teams[wi].crp = (teams[wi].crp||0) + c.winnerTotal;
+  teams[li].crp = (teams[li].crp||0) + c.loserTotal;
+  teams[wi].wins   = (teams[wi].wins||0) + 1;
+  teams[li].losses = (teams[li].losses||0) + 1;
+  teams[wi].consecutive_wins = (teams[wi].consecutive_wins||0) + 1;
+  teams[li].consecutive_wins = 0;
+
+  // History
+  const wName = teams[wi].name;
+  const lName = teams[li].name;
+  const wRec = { opponent:lName, result:'Win',  crp_gained:c.winnerTotal, home_map_bonus:homeFor==='winner'||homeFor==='both', streak_bonus:c.streakBonus, pos_before:wPos, pos_after:teams[wi].position, timestamp:ts };
+  const lRec = { opponent:wName, result:'Loss', crp_gained:c.loserTotal,  home_map_bonus:homeFor==='loser' ||homeFor==='both', streak_bonus:0,             pos_before:lPos, pos_after:teams[li].position, timestamp:ts };
+  teams[wi].match_history = [wRec, ...(teams[wi].match_history||[])];
+  teams[li].match_history = [lRec, ...(teams[li].match_history||[])];
+
+  setTeams(teams);
+
+  const swapMsg = shifted ? ` · ${teams[wi].name} moved to #${lPos}, teams shifted down` : '';
+  toast(`Match logged: ${wName} wins · +${c.winnerTotal} / +${c.loserTotal} CRP${swapMsg}`);
+
+  document.getElementById('m-win').value  = '';
+  document.getElementById('m-home').value = 'none';
+  document.getElementById('crp-preview').style.display = 'none';
+  refreshMod();
+  if (document.getElementById('page-position').classList.contains('active')) renderBoard('pos-tbody', positionSorted(), 'position');
+  if (document.getElementById('page-crp').classList.contains('active'))      renderBoard('crp-tbody', crpSorted(), 'crp');
+}
+
+// ─── TEAM FORM ────────────────────────────────────────
+function loadTeamFormByIdx(btn) {
+  const idx = parseInt(btn.getAttribute('data-team-idx'));
+  const t = getTeams()[idx];
+  if (!t) return;
+  _fillTeamForm(t);
+}
+function loadTeamForm(name) {
+  const t = getTeams().find(x => x.name===name);
+  if (!t) return;
+  _fillTeamForm(t);
+}
+function _fillTeamForm(t) {
+  document.getElementById('t-name').value   = t.name;
+  document.getElementById('t-tag').value    = t.tag||'';
+  document.getElementById('t-crp').value    = t.crp||0;
+  document.getElementById('t-pos').value    = (t.position != null) ? t.position : '';
+  document.getElementById('t-wins').value   = t.wins||0;
+  document.getElementById('t-losses').value = t.losses||0;
+  document.getElementById('t-cw').value     = t.consecutive_wins||0;
+  setTimeout(() => { document.getElementById('t-parent').value = t.parent_team||''; }, 10);
+  showModSec('sec-teams', document.querySelector('.mod-nav'));
+}
+function clearTeamForm() {
+  ['t-name','t-tag'].forEach(id => document.getElementById(id).value='');
+  ['t-crp','t-wins','t-losses','t-cw'].forEach(id => document.getElementById(id).value=0);
+  document.getElementById('t-pos').value='';
+  document.getElementById('t-parent').value='';
+}
+function saveTeam() {
+  const name = document.getElementById('t-name').value.trim();
+  if (!name) { toast('Name required',true); return; }
+  const posVal = document.getElementById('t-pos').value;
+  const newTeam = {
+    name,
+    tag:              document.getElementById('t-tag').value.trim(),
+    crp:              parseInt(document.getElementById('t-crp').value)||0,
+    position:         posVal!=='' ? parseInt(posVal) : null,
+    wins:             parseInt(document.getElementById('t-wins').value)||0,
+    losses:           parseInt(document.getElementById('t-losses').value)||0,
+    consecutive_wins: parseInt(document.getElementById('t-cw').value)||0,
+    parent_team:      document.getElementById('t-parent').value||null,
+  };
+  const teams = getTeams();
+  const idx = teams.findIndex(t => t.name===name);
+  if (idx>=0) {
+    newTeam.match_history = teams[idx].match_history||[];
+    teams[idx] = newTeam;
+  } else {
+    newTeam.match_history = [];
+    teams.push(newTeam);
+  }
+  setTeams(teams);
+  toast(`Team "${name}" saved ✓`);
+  clearTeamForm();
+  refreshMod();
+}
+
+// ─── DRIVER FORM ──────────────────────────────────────
+function loadDriverFormByIdx(btn) {
+  const idx = parseInt(btn.getAttribute('data-driver-idx'));
+  const d = getDrivers()[idx];
+  if (!d) return;
+  _fillDriverForm(d);
+}
+function loadDriverForm(name) {
+  const d = getDrivers().find(x => x.name===name);
+  if (!d) return;
+  _fillDriverForm(d);
+}
+function _fillDriverForm(d) {
+  document.getElementById('d-name').value = d.name;
+  document.getElementById('d-car').value  = d.car||'';
+  document.getElementById('d-role').value = d.role||'Member';
+  setTimeout(() => {
+    document.getElementById('d-team').value  = d.team||'';
+    document.getElementById('d-team2').value = d.team2||'';
+    document.getElementById('d-team3').value = d.team3||'';
+  }, 10);
+  showModSec('sec-drivers', document.querySelectorAll('.mod-nav')[1]);
+}
+function clearDriverForm() {
+  document.getElementById('d-name').value='';
+  document.getElementById('d-car').value='';
+  document.getElementById('d-role').value='Member';
+  document.getElementById('d-team').value='';
+  document.getElementById('d-team2').value='';
+  document.getElementById('d-team3').value='';
+}
+function saveDriver() {
+  const name = document.getElementById('d-name').value.trim();
+  const car  = document.getElementById('d-car').value.trim();
+  if (!name) { toast('Name required',true); return; }
+  if (!car) { toast('Please select a car',true); return; }
+  const t2 = document.getElementById('d-team2').value||null;
+  const t3 = document.getElementById('d-team3').value||null;
+  const driver = {
+    name, car,
+    role:  document.getElementById('d-role').value,
+    team:  document.getElementById('d-team').value||null,
+    team2: t2,
+    team3: t3
+  };
+  const drivers = getDrivers();
+  const idx = drivers.findIndex(d => d.name===name);
+  if (idx>=0) drivers[idx]=driver; else drivers.push(driver);
+  setDrivers(drivers);
+  toast(`Driver "${name}" saved ✓`);
+  clearDriverForm();
+  refreshMod();
+}
+
+// ─── DELETE ───────────────────────────────────────────
+function seasonReset() {
+  const btn = document.getElementById('season-reset-btn');
+  if (btn.dataset.confirm !== 'season') {
+    btn.textContent = 'Click again to confirm reset';
+    btn.dataset.confirm = 'season';
+    setTimeout(() => { btn.textContent = 'Reset Season'; delete btn.dataset.confirm; }, 4000);
+    return;
+  }
+  delete btn.dataset.confirm;
+  btn.textContent = 'Reset Season';
+  const teams = getTeams().map(t => ({
+    ...t,
+    crp: 0,
+    wins: 0,
+    losses: 0,
+    consecutive_wins: 0,
+    match_history: []
+  }));
+  setTeams(teams);
+  toast('Season reset complete ✓ All CRP, W/L and match history cleared');
+  refreshMod();
+  if (document.getElementById('page-position').classList.contains('active')) renderBoard('pos-tbody', positionSorted(), 'position');
+  if (document.getElementById('page-crp').classList.contains('active'))      renderBoard('crp-tbody', crpSorted(), 'crp');
+}
+
+function deleteTeam() {
+  const name = document.getElementById('del-team').value;
+  if (!name) { toast('Select a team first', true); return; }
+  const btn = document.getElementById('del-team-btn');
+  if (btn.dataset.confirm !== name) {
+    btn.textContent = 'Click again to confirm';
+    btn.dataset.confirm = name;
+    setTimeout(() => { btn.textContent = 'Delete Team'; delete btn.dataset.confirm; }, 3000);
+    return;
+  }
+  delete btn.dataset.confirm;
+  btn.textContent = 'Delete Team';
+  setTeams(getTeams().filter(t=>t.name!==name));
+  setDrivers(getDrivers().map(d=>d.team===name?{...d,team:null}:d));
+  toast(`Team "${name}" deleted`);
+  refreshMod();
+}
+function deleteDriver() {
+  const name = document.getElementById('del-driver').value;
+  if (!name) { toast('Select a driver first', true); return; }
+  const btn = document.getElementById('del-driver-btn');
+  if (btn.dataset.confirm !== name) {
+    btn.textContent = 'Click again to confirm';
+    btn.dataset.confirm = name;
+    setTimeout(() => { btn.textContent = 'Delete Driver'; delete btn.dataset.confirm; }, 3000);
+    return;
+  }
+  delete btn.dataset.confirm;
+  btn.textContent = 'Delete Driver';
+  setDrivers(getDrivers().filter(d=>d.name!==name));
+  toast(`Driver "${name}" deleted`);
+  refreshMod();
+}
+
+// ─── INIT ─────────────────────────────────────────────
+renderBoard('pos-tbody', positionSorted(), 'position');
+</script>
+</body>
+</html>

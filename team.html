@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Profile — IU Team Battles</title>
+    <link rel="stylesheet" href="/src/styles/global.css">
+</head>
+<body>
+    <nav class="site-nav">
+        <div class="nav-inner">
+            <a href="/" class="nav-logo"><span>IU</span> Team Battles</a>
+            <ul class="nav-links">
+                <li><a href="/">Standings</a></li>
+                <li><a href="https://initialunityreborn.com" target="_blank">Main Site</a></li>
+                <li><a href="/admin" class="staff-login">Staff Login</a></li>
+            </ul>
+            <button class="nav-toggle" id="navToggle">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+    <div class="nav-mobile-overlay" id="mobileMenu">
+        <a href="/">Standings</a>
+        <a href="https://initialunityreborn.com" target="_blank">Main Site</a>
+        <a href="/admin">Staff Login</a>
+    </div>
+
+    <section class="page-hero">
+        <h1 id="teamTitle">Loading...</h1>
+        <p id="teamSubtitle"></p>
+    </section>
+
+    <main class="content-section">
+        <div id="teamContainer">
+            <div class="loading-spinner"></div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-brand">Initial Unity<span>:</span> Reborn</div>
+            <div class="footer-copy">Fan-made racing game inspired by Initial D</div>
+        </div>
+    </footer>
+
+    <script type="module" src="/src/team.js"></script>
+</body>
+</html>

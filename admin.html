@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Dashboard — IU Team Battles</title>
+    <link rel="stylesheet" href="/src/styles/global.css">
+</head>
+<body>
+    <nav class="site-nav">
+        <div class="nav-inner">
+            <a href="/" class="nav-logo"><span>IU</span> Team Battles</a>
+            <ul class="nav-links">
+                <li><a href="/">Standings</a></li>
+                <li><a href="https://initialunityreborn.com" target="_blank">Main Site</a></li>
+                <li><a href="/admin" class="staff-login active">Staff</a></li>
+            </ul>
+            <button class="nav-toggle" id="navToggle">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+    <div class="nav-mobile-overlay" id="mobileMenu">
+        <a href="/">Standings</a>
+        <a href="https://initialunityreborn.com" target="_blank">Main Site</a>
+        <a href="/admin" class="active">Staff</a>
+    </div>
+
+    <section class="page-hero">
+        <h1><span>Staff</span> Dashboard</h1>
+        <p>Record results and manage teams</p>
+    </section>
+
+    <main class="content-section">
+        <div id="adminContainer">
+            <!-- Placeholder — Phase 3 will build this out -->
+            <div style="text-align: center; padding: 60px 0; color: var(--text-dim);">
+                <p style="font-size: 1.2rem; margin-bottom: 8px;">Staff dashboard coming soon</p>
+                <p>Discord OAuth login and result entry will be added in Phase 3</p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-brand">Initial Unity<span>:</span> Reborn</div>
+            <div class="footer-copy">Fan-made racing game inspired by Initial D</div>
+        </div>
+    </footer>
+
+    <script type="module" src="/src/admin.js"></script>
+</body>
+</html>

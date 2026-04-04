@@ -1,0 +1,18 @@
+{
+  "name": "initial-unity-teambattle",
+  "version": "1.0.0",
+  "description": "Team Battle hub for Initial Unity Reborn",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "firebase": "^12.11.0",
+    "vite": "^8.0.3"
+  }
+}
