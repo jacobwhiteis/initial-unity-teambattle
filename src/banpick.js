@@ -27,7 +27,11 @@ const PHASE = {
     PICK_HOME_B: 'PICK_HOME_B',
     BAN_A: 'BAN_A',
     BAN_B: 'BAN_B',
-    DECIDER: 'DECIDER'
+    PICK_MAP_A: 'PICK_MAP_A',
+    PICK_MAP_B: 'PICK_MAP_B',
+    RACING: 'RACING',
+    DECIDER: 'DECIDER',
+    COMPLETE: 'COMPLETE'
 };
 
 const ROLES = {
@@ -39,10 +43,16 @@ const ROLES = {
 let currentSessionId = null;
 let playerRole = ROLES.SPECTATOR; // Default
 let localState = {
-    phase: PHASE.WAITING, // Default to waiting
+    phase: PHASE.WAITING,
+    format: 'BO3',
+    round: 1,
     homeA: null,
     homeB: null,
     bans: [],
+    picks: [],
+    liveScore: { teamA: 0, teamB: 0 },
+    teamAHigherRank: true,
+    matchId: null,
     history: [],
     teamAName: 'Team A',
     teamBName: 'Team B',
@@ -317,53 +327,98 @@ function updateLobbyButtons() {
 
 // --- GAME LOGIC ---
 
+function getFirstPicker(score, teamAHigherRank) {
+    // For secondary picks: losing team picks first at match point, otherwise higher picks first
+    const isMatchPoint = Math.max(score.teamA, score.teamB) >= 2;
+    if (isMatchPoint) {
+        // Losing team picks first (advantageous at match point)
+        if (score.teamA < score.teamB) return 'A';
+        if (score.teamB < score.teamA) return 'B';
+    }
+    // Tied or not match point: higher-ranked picks first (lower gets advantageous second)
+    return teamAHigherRank ? 'A' : 'B';
+}
+
 async function handleMapClick(mapId) {
     // Only Active Roles
     if (playerRole === ROLES.SPECTATOR) return;
 
-    // Phase checks
-    if (playerRole === ROLES.TEAM_A) {
-        if (localState.phase !== PHASE.PICK_HOME_A && localState.phase !== PHASE.BAN_A) return;
-    } else if (playerRole === ROLES.TEAM_B) {
-        if (localState.phase !== PHASE.PICK_HOME_B && localState.phase !== PHASE.BAN_B) return;
-    }
+    // Phase checks — which phases can each team act in?
+    const teamAPhases = [PHASE.PICK_HOME_A, PHASE.BAN_A, PHASE.PICK_MAP_A];
+    const teamBPhases = [PHASE.PICK_HOME_B, PHASE.BAN_B, PHASE.PICK_MAP_B];
 
-    // Validation
+    if (playerRole === ROLES.TEAM_A && !teamAPhases.includes(localState.phase)) return;
+    if (playerRole === ROLES.TEAM_B && !teamBPhases.includes(localState.phase)) return;
+
+    // Validation — can't click banned, home-picked, or secondary-picked maps
     if (localState.bans.includes(mapId)) return;
     if (localState.homeA === mapId || localState.homeB === mapId) return;
+    if ((localState.picks || []).includes(mapId)) return;
 
     // Calculate Next State
     let updates = {};
     const mapName = MAPS.find(m => m.id === mapId).name;
     const now = Date.now();
-
-    // Team Names for Log
     const nameA = localState.teamAName || "Team A";
     const nameB = localState.teamBName || "Team B";
+    const format = localState.format || 'BO3';
+    const round = localState.round || 1;
+    const score = localState.liveScore || { teamA: 0, teamB: 0 };
 
     if (localState.phase === PHASE.PICK_HOME_A) {
         updates.homeA = mapId;
         updates.phase = PHASE.PICK_HOME_B;
         updates.history = arrayUnion({ text: `${nameA} picked HOME: ${mapName}`, timestamp: now });
+
     } else if (localState.phase === PHASE.PICK_HOME_B) {
         updates.homeB = mapId;
-        updates.phase = PHASE.BAN_A; // Start Bans
-        updates.history = arrayUnion({ text: `${nameB} picked HOME: ${mapName}`, timestamp: now });
+        if (localState.matchId) {
+            // Live battle: go to RACING, battle.js will orchestrate
+            updates.phase = PHASE.RACING;
+            updates.history = arrayUnion(
+                { text: `${nameB} picked HOME: ${mapName}`, timestamp: now },
+                { text: 'Home maps selected. Waiting for race results.', timestamp: now + 1 }
+            );
+        } else {
+            // Standalone session (no battle): go straight to bans (legacy behavior)
+            updates.phase = PHASE.BAN_A;
+            updates.history = arrayUnion({ text: `${nameB} picked HOME: ${mapName}`, timestamp: now });
+        }
+
     } else if (localState.phase === PHASE.BAN_A) {
         updates.bans = arrayUnion(mapId);
         updates.history = arrayUnion({ text: `${nameA} BANNED: ${mapName}`, timestamp: now });
-
         const predictedBans = [...localState.bans, mapId];
-        const nextPhase = checkDeciderPhase(predictedBans, localState.homeA, localState.homeB) ? PHASE.DECIDER : PHASE.BAN_B;
-        updates.phase = nextPhase;
+        updates.phase = getNextBanPhase('A', predictedBans, localState, format, round, score);
 
     } else if (localState.phase === PHASE.BAN_B) {
         updates.bans = arrayUnion(mapId);
         updates.history = arrayUnion({ text: `${nameB} BANNED: ${mapName}`, timestamp: now });
-
         const predictedBans = [...localState.bans, mapId];
-        const nextPhase = checkDeciderPhase(predictedBans, localState.homeA, localState.homeB) ? PHASE.DECIDER : PHASE.BAN_A;
-        updates.phase = nextPhase;
+        updates.phase = getNextBanPhase('B', predictedBans, localState, format, round, score);
+
+    } else if (localState.phase === PHASE.PICK_MAP_A) {
+        updates.picks = arrayUnion(mapId);
+        updates.history = arrayUnion({ text: `${nameA} picked MAP: ${mapName}`, timestamp: now });
+        // Determine if this is first or second pick
+        const pickCount = (localState.picks || []).length + 1;
+        if (pickCount >= 2) {
+            updates.phase = PHASE.RACING;
+            updates.history = arrayUnion({ text: 'Secondary maps selected. Waiting for race results.', timestamp: now + 1 });
+        } else {
+            updates.phase = PHASE.PICK_MAP_B;
+        }
+
+    } else if (localState.phase === PHASE.PICK_MAP_B) {
+        updates.picks = arrayUnion(mapId);
+        updates.history = arrayUnion({ text: `${nameB} picked MAP: ${mapName}`, timestamp: now });
+        const pickCount = (localState.picks || []).length + 1;
+        if (pickCount >= 2) {
+            updates.phase = PHASE.RACING;
+            updates.history = arrayUnion({ text: 'Secondary maps selected. Waiting for race results.', timestamp: now + 1 });
+        } else {
+            updates.phase = PHASE.PICK_MAP_A;
+        }
     }
 
     // Apply Update
@@ -375,9 +430,31 @@ async function handleMapClick(mapId) {
     }
 }
 
-function checkDeciderPhase(bans, homeA, homeB) {
+// Determine next phase after a ban
+function getNextBanPhase(banningTeam, predictedBans, state, format, round, score) {
+    const picks = state.picks || [];
+
+    // BO5 round 2: exactly 4 bans, then transition to PICK_MAP
+    if (format === 'BO5' && round === 2) {
+        if (predictedBans.length >= 4) {
+            // Transition to pick phase — determine who picks first
+            const firstPicker = getFirstPicker(score, state.teamAHigherRank);
+            return firstPicker === 'A' ? PHASE.PICK_MAP_A : PHASE.PICK_MAP_B;
+        }
+        // More bans needed — alternate
+        return banningTeam === 'A' ? PHASE.BAN_B : PHASE.BAN_A;
+    }
+
+    // Decider round (BO3 round 2, or BO5 round 3): ban until 1 map left
+    if (checkDeciderPhase(predictedBans, state.homeA, state.homeB, picks)) {
+        return PHASE.DECIDER;
+    }
+    return banningTeam === 'A' ? PHASE.BAN_B : PHASE.BAN_A;
+}
+
+function checkDeciderPhase(bans, homeA, homeB, picks) {
     const totalMaps = MAPS.length;
-    const picked = (homeA !== null ? 1 : 0) + (homeB !== null ? 1 : 0);
+    const picked = (homeA !== null ? 1 : 0) + (homeB !== null ? 1 : 0) + (picks || []).length;
     const banned = bans.length;
     const remaining = totalMaps - picked - banned;
     return remaining === 1;
@@ -458,9 +535,27 @@ function updateUI() {
             subText = "Banning a Map";
             turnColorClass = "team-b-turn";
             break;
+        case PHASE.PICK_MAP_A:
+            mainText = `${nameA} TURN`;
+            subText = "Picking a Map";
+            turnColorClass = "team-a-turn";
+            break;
+        case PHASE.PICK_MAP_B:
+            mainText = `${nameB} TURN`;
+            subText = "Picking a Map";
+            turnColorClass = "team-b-turn";
+            break;
+        case PHASE.RACING:
+            mainText = "RACING";
+            subText = "Waiting for race results";
+            break;
         case PHASE.DECIDER:
             mainText = "DECIDER CHOSEN";
             subText = "Ban Phase Complete";
+            break;
+        case PHASE.COMPLETE:
+            mainText = "COMPLETE";
+            subText = "All maps determined";
             break;
     }
 
@@ -469,11 +564,11 @@ function updateUI() {
     const turnSubtext = document.getElementById('turn-subtext');
 
     // Check if it's my turn
-    const isMyTurn = (playerRole === ROLES.TEAM_A && (localState.phase === PHASE.PICK_HOME_A || localState.phase === PHASE.BAN_A)) ||
-        (playerRole === ROLES.TEAM_B && (localState.phase === PHASE.PICK_HOME_B || localState.phase === PHASE.BAN_B));
+    const isMyTurn = (playerRole === ROLES.TEAM_A && [PHASE.PICK_HOME_A, PHASE.BAN_A, PHASE.PICK_MAP_A].includes(localState.phase)) ||
+        (playerRole === ROLES.TEAM_B && [PHASE.PICK_HOME_B, PHASE.BAN_B, PHASE.PICK_MAP_B].includes(localState.phase));
 
     // Add waiting indicator if not my turn and game is active
-    const isGameActive = localState.phase !== PHASE.WAITING && localState.phase !== PHASE.DECIDER;
+    const isGameActive = ![PHASE.WAITING, PHASE.DECIDER, PHASE.RACING, PHASE.COMPLETE].includes(localState.phase);
     const waitingIndicator = '<span class="waiting-indicator"><span></span><span></span><span></span></span>';
 
     if (turnDisplay) {
@@ -491,17 +586,17 @@ function updateUI() {
         if (turnColorClass) statusBar.classList.add(turnColorClass);
 
         // Pulse Type
-        if (localState.phase === PHASE.PICK_HOME_A || localState.phase === PHASE.PICK_HOME_B) {
+        if ([PHASE.PICK_HOME_A, PHASE.PICK_HOME_B, PHASE.PICK_MAP_A, PHASE.PICK_MAP_B].includes(localState.phase)) {
             statusBar.classList.add('pulse-pick');
         } else if (localState.phase === PHASE.BAN_A || localState.phase === PHASE.BAN_B) {
             statusBar.classList.add('pulse-ban');
         }
 
         // Turn Flash - check role
-        const isMyTurn = (playerRole === ROLES.TEAM_A && (localState.phase === PHASE.PICK_HOME_A || localState.phase === PHASE.BAN_A)) ||
-            (playerRole === ROLES.TEAM_B && (localState.phase === PHASE.PICK_HOME_B || localState.phase === PHASE.BAN_B));
+        const isMyTurn2 = (playerRole === ROLES.TEAM_A && [PHASE.PICK_HOME_A, PHASE.BAN_A, PHASE.PICK_MAP_A].includes(localState.phase)) ||
+            (playerRole === ROLES.TEAM_B && [PHASE.PICK_HOME_B, PHASE.BAN_B, PHASE.PICK_MAP_B].includes(localState.phase));
 
-        if (isMyTurn) {
+        if (isMyTurn2) {
             statusBar.classList.add('your-turn');
         }
     }
@@ -511,10 +606,23 @@ function updateUI() {
         turnDisplay.style.color = '#fff';
     }
 
+    // Pipeline visual
+    renderPipeline();
+
     // PHASE LOGIC
-    if (localState.phase === PHASE.DECIDER) {
+    const racingView = document.getElementById('racing-view');
+    if (localState.phase === PHASE.DECIDER || localState.phase === PHASE.COMPLETE) {
+        if (racingView) racingView.style.display = 'none';
         renderResults();
+    } else if (localState.phase === PHASE.RACING) {
+        if (resultsView) resultsView.classList.remove('visible');
+        if (mapGridContainer) {
+            mapGridContainer.classList.add('fade-out');
+            setTimeout(() => { mapGridContainer.style.display = 'none'; }, 500);
+        }
+        renderRacingView();
     } else {
+        if (racingView) racingView.style.display = 'none';
         if (resultsView) resultsView.classList.remove('visible');
         if (mapGridContainer) {
             mapGridContainer.classList.remove('fade-out');
@@ -533,62 +641,124 @@ function updateUI() {
 }
 
 function renderResults() {
-    // 1. Calculate Decider
+    // Calculate Decider
     const allIds = MAPS.map(m => m.id);
-    const taken = [...localState.bans];
+    const taken = [...localState.bans, ...(localState.picks || [])];
     if (localState.homeA !== null) taken.push(localState.homeA);
     if (localState.homeB !== null) taken.push(localState.homeB);
     const deciderId = allIds.find(id => !taken.includes(id));
 
-    // 2. Fade Out Grid
+    // Fade Out Grid
     if (mapGridContainer) {
         mapGridContainer.classList.add('fade-out');
         setTimeout(() => { mapGridContainer.style.display = 'none'; }, 500);
     }
+    const racingView = document.getElementById('racing-view');
+    if (racingView) racingView.style.display = 'none';
 
-    // 3. Populate Results
+    // Populate Results
     setTimeout(() => {
-        if (resultsView) {
-            resultsView.style.display = 'flex'; // Set display first
+        if (!resultsView) return;
+        const nameA = (localState.teamAName || "TEAM A").toUpperCase();
+        const nameB = (localState.teamBName || "TEAM B").toUpperCase();
+        const format = localState.format || 'BO3';
+        const picks = localState.picks || [];
 
-            const homeA = MAPS.find(m => m.id === localState.homeA);
-            const homeB = MAPS.find(m => m.id === localState.homeB);
-            const decider = MAPS.find(m => m.id === deciderId);
+        // Build results grid dynamically
+        let gridHtml = '';
+        let mapNum = 1;
 
-            const elHomeA = document.getElementById('res-home-a');
-            const elHomeB = document.getElementById('res-home-b');
-            const elDecider = document.getElementById('res-decider');
+        // Home maps (always present)
+        const homeA = MAPS.find(m => m.id === localState.homeA);
+        const homeB = MAPS.find(m => m.id === localState.homeB);
 
-            if (elHomeA) elHomeA.innerHTML = createResultCard(homeA, 'picked');
-            if (elHomeB) elHomeB.innerHTML = createResultCard(homeB, 'picked');
-            if (elDecider) elDecider.innerHTML = createResultCard(decider, 'decider');
+        gridHtml += `<div class="bp-result-card">
+            <div class="bp-result-label">MAP ${mapNum}: ${nameA} HOME</div>
+            <div>${createResultCard(homeA, 'picked')}</div>
+        </div>`;
+        mapNum++;
+        gridHtml += `<div class="bp-result-card">
+            <div class="bp-result-label">MAP ${mapNum}: ${nameB} HOME</div>
+            <div>${createResultCard(homeB, 'picked')}</div>
+        </div>`;
+        mapNum++;
 
-            // Labels
-            const labelA = resultsView.querySelector('.area-home-a .bp-result-label');
-            const labelB = resultsView.querySelector('.area-home-b .bp-result-label');
-            const labelDecider = resultsView.querySelector('.area-decider .bp-result-label');
-
-            const nameA = (localState.teamAName || "TEAM A").toUpperCase();
-            const nameB = (localState.teamBName || "TEAM B").toUpperCase();
-
-            if (labelB) {
-                labelB.innerHTML = `MAP 1: ${nameB} HOME<br><small style="color:var(--text-mute)" style="font-size: 0.8rem; font-weight: normal; letter-spacing: 0;">${nameA} SELECTS STARTING POSITIONS</small>`;
-            }
-            if (labelA) {
-                labelA.innerHTML = `MAP 2: ${nameA} HOME<br><small style="color:var(--text-mute)" style="font-size: 0.8rem; font-weight: normal; letter-spacing: 0;">${nameB} SELECTS STARTING POSITIONS</small>`;
-            }
-            if (labelDecider) {
-                labelDecider.textContent = "MAP 3: DECIDER";
-            }
-
-            // Use double RAF to ensure browser registers the initial state (display:flex, opacity:0) before transitioning to opacity:1
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    resultsView.classList.add('visible');
-                });
+        // Secondary picks (BO5 only)
+        if (format === 'BO5' && picks.length > 0) {
+            picks.forEach(pickId => {
+                const pickMap = MAPS.find(m => m.id === pickId);
+                gridHtml += `<div class="bp-result-card">
+                    <div class="bp-result-label">MAP ${mapNum}: PICK</div>
+                    <div>${createResultCard(pickMap, 'picked')}</div>
+                </div>`;
+                mapNum++;
             });
         }
+
+        // Decider
+        if (deciderId != null) {
+            const decider = MAPS.find(m => m.id === deciderId);
+            gridHtml += `<div class="bp-result-card" style="grid-column: 1 / -1; max-width: 320px; justify-self: center;">
+                <div class="bp-result-label decider-label">MAP ${mapNum}: DECIDER</div>
+                <div>${createResultCard(decider, 'decider')}</div>
+            </div>`;
+        }
+
+        resultsView.innerHTML = `<div class="bp-results-grid" style="grid-template-columns: repeat(2, 1fr); gap: 1.2rem; max-width: 700px; width: 100%;">${gridHtml}</div>`;
+        resultsView.style.display = 'flex';
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                resultsView.classList.add('visible');
+            });
+        });
     }, 500);
+}
+
+function renderRacingView() {
+    const racingView = document.getElementById('racing-view');
+    if (!racingView) return;
+
+    const nameA = (localState.teamAName || "TEAM A").toUpperCase();
+    const nameB = (localState.teamBName || "TEAM B").toUpperCase();
+    const round = localState.round || 1;
+    const picks = localState.picks || [];
+    const score = localState.liveScore || { teamA: 0, teamB: 0 };
+
+    let mapsHtml = '';
+
+    // Show homes
+    if (localState.homeA !== null) {
+        const homeA = MAPS.find(m => m.id === localState.homeA);
+        const homeB = MAPS.find(m => m.id === localState.homeB);
+        mapsHtml += `<div class="racing-map-row">
+            <div class="racing-map-card">${createResultCard(homeA, 'picked')}<div class="racing-map-label">${nameA} HOME</div></div>
+            <div class="racing-map-card">${createResultCard(homeB, 'picked')}<div class="racing-map-label">${nameB} HOME</div></div>
+        </div>`;
+    }
+
+    // Show secondary picks if round 2 complete
+    if (round >= 2 && picks.length > 0) {
+        mapsHtml += '<div class="racing-map-row">';
+        picks.forEach((pickId, i) => {
+            const pickMap = MAPS.find(m => m.id === pickId);
+            mapsHtml += `<div class="racing-map-card">${createResultCard(pickMap, 'picked')}<div class="racing-map-label">MAP ${3 + i}</div></div>`;
+        });
+        mapsHtml += '</div>';
+    }
+
+    const battleLink = localState.matchId ? `<a href="/battle?id=${localState.matchId}" class="racing-battle-link" target="_blank">Go to Battle Page</a>` : '';
+
+    racingView.innerHTML = `
+        <div class="racing-content">
+            <div class="racing-score">${score.teamA} — ${score.teamB}</div>
+            <div class="racing-title">WAITING FOR RACE RESULTS</div>
+            <div class="racing-subtitle">Maps will be raced on the battle page</div>
+            ${mapsHtml}
+            ${battleLink}
+        </div>
+    `;
+    racingView.style.display = 'flex';
 }
 
 function createResultCard(map, type) {
@@ -606,51 +776,59 @@ function renderMapGrid() {
     if (!mapGridContainer) return;
     mapGridContainer.innerHTML = '';
 
-    // Find Decider (redundant check but good for safety)
+    const picks = localState.picks || [];
+
+    // Find Decider
     let deciderId = null;
     if (localState.phase === PHASE.DECIDER) {
         const allIds = MAPS.map(m => m.id);
-        const taken = [...localState.bans];
+        const taken = [...localState.bans, ...picks];
         if (localState.homeA !== null) taken.push(localState.homeA);
         if (localState.homeB !== null) taken.push(localState.homeB);
         deciderId = allIds.find(id => !taken.includes(id));
     }
 
+    // Determine current action type
+    const isPickPhase = [PHASE.PICK_HOME_A, PHASE.PICK_HOME_B, PHASE.PICK_MAP_A, PHASE.PICK_MAP_B].includes(localState.phase);
+    const isBanPhase = [PHASE.BAN_A, PHASE.BAN_B].includes(localState.phase);
+    const isInteractivePhase = isPickPhase || isBanPhase;
+
+    // Determine action text for overlay
+    let actionText = '';
+    let actionColor = '';
+    if (localState.phase === PHASE.PICK_HOME_A || localState.phase === PHASE.PICK_HOME_B) {
+        actionText = 'PICK HOME';
+        actionColor = '#2ecc71';
+    } else if (localState.phase === PHASE.PICK_MAP_A || localState.phase === PHASE.PICK_MAP_B) {
+        actionText = 'PICK MAP';
+        actionColor = '#2ecc71';
+    } else if (isBanPhase) {
+        actionText = 'BAN MAP';
+        actionColor = '#ff3d00';
+    }
+
+    // isMyTurn check
+    const isMyTurn = (playerRole === ROLES.TEAM_A && [PHASE.PICK_HOME_A, PHASE.BAN_A, PHASE.PICK_MAP_A].includes(localState.phase)) ||
+        (playerRole === ROLES.TEAM_B && [PHASE.PICK_HOME_B, PHASE.BAN_B, PHASE.PICK_MAP_B].includes(localState.phase));
+
     MAPS.forEach(map => {
         const el = document.createElement('div');
-        console.log("Rendering Map:", map.name, "Phase:", localState.phase); // Debug check
         el.className = 'bp-map';
 
         // Add Picking/Banning Class for CSS Hover
-        if (localState.phase === PHASE.PICK_HOME_A || localState.phase === PHASE.PICK_HOME_B) {
-            el.classList.add('picking');
-        } else if (localState.phase === PHASE.BAN_A || localState.phase === PHASE.BAN_B) {
-            el.classList.add('banning');
-        }
+        if (isPickPhase) el.classList.add('picking');
+        else if (isBanPhase) el.classList.add('banning');
 
         const bg = document.createElement('div');
         bg.className = 'bp-map-bg';
         bg.style.backgroundImage = `url('${map.image}')`;
         el.appendChild(bg);
 
-        // Hover Overlay (Only during interactive phases)
-        const isInteractivePhase = [PHASE.PICK_HOME_A, PHASE.PICK_HOME_B, PHASE.BAN_A, PHASE.BAN_B].includes(localState.phase);
-
+        // Hover Overlay
         if (isInteractivePhase) {
             const hoverOverlay = document.createElement('div');
             hoverOverlay.className = 'bp-map-overlay';
-            let actionText = "";
-            let color = "";
-
-            if (localState.phase === PHASE.PICK_HOME_A || localState.phase === PHASE.PICK_HOME_B) {
-                actionText = "PICK HOME";
-                color = "#2ecc71";
-            } else {
-                actionText = "BAN MAP";
-                color = "#ff3d00";
-            }
-
-            hoverOverlay.style.color = color;
+            hoverOverlay.style.color = actionColor;
             hoverOverlay.innerHTML = `<div class="bp-map-overlay-text">${actionText}</div>`;
             el.appendChild(hoverOverlay);
         }
@@ -665,13 +843,11 @@ function renderMapGrid() {
             el.classList.add('banned');
         } else if (localState.homeA === map.id || localState.homeB === map.id) {
             el.classList.add('picked');
+        } else if (picks.includes(map.id)) {
+            el.classList.add('picked', 'secondary-pick');
         } else if (map.id === deciderId) {
             el.classList.add('decider');
         } else {
-            // Interaction Check using new ROLES
-            const isMyTurn = (playerRole === ROLES.TEAM_A && (localState.phase === PHASE.PICK_HOME_A || localState.phase === PHASE.BAN_A)) ||
-                (playerRole === ROLES.TEAM_B && (localState.phase === PHASE.PICK_HOME_B || localState.phase === PHASE.BAN_B));
-
             if (!isMyTurn || localState.phase === PHASE.DECIDER) {
                 el.classList.add('disabled');
             } else {
@@ -681,6 +857,79 @@ function renderMapGrid() {
 
         mapGridContainer.appendChild(el);
     });
+}
+
+// --- PIPELINE ---
+
+function getPipelineStages() {
+    const format = localState.format || 'BO3';
+    const round = localState.round || 1;
+
+    if (format === 'BO5') {
+        const stages = [
+            { id: 'home-picks', label: 'HOME PICKS' },
+            { id: 'race-homes', label: 'RACE HOMES' },
+            { id: 'secondary-bans', label: 'BANS' },
+            { id: 'secondary-picks', label: 'PICKS' },
+            { id: 'race-secondary', label: 'RACE' },
+        ];
+        // Decider stages only appear once round 3 is reached
+        if (round >= 3) {
+            stages.push({ id: 'decider-bans', label: 'DECIDER BANS' });
+            stages.push({ id: 'race-decider', label: 'DECIDER' });
+        }
+        return stages;
+    }
+
+    // BO3
+    const stages = [
+        { id: 'home-picks', label: 'HOME PICKS' },
+        { id: 'race-homes', label: 'RACE HOMES' },
+    ];
+    // Decider stages only appear once round 2 is reached
+    if (round >= 2) {
+        stages.push({ id: 'decider-bans', label: 'DECIDER BANS' });
+        stages.push({ id: 'race-decider', label: 'DECIDER' });
+    }
+    return stages;
+}
+
+function getCurrentStageId() {
+    const phase = localState.phase;
+    const format = localState.format || 'BO3';
+    const round = localState.round || 1;
+
+    if (phase === PHASE.WAITING || phase === PHASE.PICK_HOME_A || phase === PHASE.PICK_HOME_B) return 'home-picks';
+    if (phase === PHASE.RACING && round === 1) return 'race-homes';
+    if (phase === PHASE.RACING && round === 2) return 'race-secondary';
+    if (format === 'BO5' && round === 2 && (phase === PHASE.BAN_A || phase === PHASE.BAN_B)) return 'secondary-bans';
+    if (format === 'BO5' && round === 2 && (phase === PHASE.PICK_MAP_A || phase === PHASE.PICK_MAP_B)) return 'secondary-picks';
+    if ((phase === PHASE.BAN_A || phase === PHASE.BAN_B) && ((round >= 2 && format === 'BO3') || (round >= 3 && format === 'BO5'))) return 'decider-bans';
+    if (phase === PHASE.DECIDER || phase === PHASE.COMPLETE) return 'race-decider';
+    return 'home-picks';
+}
+
+function renderPipeline() {
+    const container = document.getElementById('pipeline');
+    if (!container) return;
+
+    const stages = getPipelineStages();
+    const currentId = getCurrentStageId();
+    let reachedCurrent = false;
+
+    container.innerHTML = stages.map((stage, i) => {
+        let stateClass = '';
+        if (stage.id === currentId) {
+            stateClass = 'pipeline-active';
+            reachedCurrent = true;
+        } else if (!reachedCurrent) {
+            stateClass = 'pipeline-done';
+        } else {
+            stateClass = 'pipeline-future';
+        }
+        const separator = i < stages.length - 1 ? '<span class="pipeline-sep"></span>' : '';
+        return `<span class="pipeline-stage ${stateClass}">${stage.label}</span>${separator}`;
+    }).join('');
 }
 
 // Run Init

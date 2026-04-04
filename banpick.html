@@ -151,6 +151,11 @@
             font-family: var(--font-heading); font-size: 1rem; letter-spacing: .12em;
             background: rgba(60,179,113,.85); color: #fff;
         }
+        /* Secondary pick override */
+        .bp-map.picked.secondary-pick::after {
+            content: 'PICK';
+            background: rgba(80,140,200,.85);
+        }
 
         /* Decider */
         .bp-map.decider { border-color: #d4a035; box-shadow: 0 0 15px rgba(212,160,53,.3); }
@@ -229,11 +234,69 @@
         .bp-status.pulse-ban.your-turn { animation: bp-pulse-ban 1.2s infinite ease-in-out; }
         .bp-status.pulse-pick.your-turn { animation: bp-pulse-pick 1.2s infinite ease-in-out; }
 
+        /* Pipeline stepper */
+        .bp-pipeline {
+            display: flex; align-items: center; justify-content: center;
+            gap: 0; padding: .4rem 1rem; background: var(--surface);
+            border-bottom: 1px solid var(--border); flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        .pipeline-stage {
+            font-family: var(--font-condensed); font-size: .65rem; font-weight: 700;
+            letter-spacing: .08em; text-transform: uppercase;
+            padding: .2rem .5rem; border-radius: 3px;
+            white-space: nowrap;
+        }
+        .pipeline-done { color: var(--text-mute); }
+        .pipeline-active { color: var(--accent); background: rgba(255,85,32,.12); border: 1px solid rgba(255,85,32,.3); }
+        .pipeline-future { color: var(--text-mute); opacity: .4; }
+        .pipeline-sep {
+            width: 12px; height: 1px; background: var(--border); margin: 0 .2rem;
+            flex-shrink: 0;
+        }
+
+        /* Racing waiting view */
+        .bp-racing {
+            display: none; flex: 1; align-items: center; justify-content: center;
+            padding: 1rem; text-align: center;
+        }
+        .racing-content { max-width: 600px; width: 100%; }
+        .racing-score {
+            font-family: var(--font-heading); font-size: 3rem; letter-spacing: .1em;
+            color: var(--accent); margin-bottom: .5rem;
+        }
+        .racing-title {
+            font-family: var(--font-heading); font-size: 1.4rem; letter-spacing: .1em;
+            color: var(--text); margin-bottom: .3rem;
+        }
+        .racing-subtitle {
+            font-family: var(--font-condensed); font-size: .8rem; color: var(--text-mute);
+            letter-spacing: .05em; margin-bottom: 1.5rem;
+        }
+        .racing-map-row {
+            display: flex; gap: 1rem; justify-content: center; margin-bottom: 1rem;
+        }
+        .racing-map-card {
+            max-width: 200px; flex: 1; text-align: center;
+        }
+        .racing-map-label {
+            font-family: var(--font-condensed); font-size: .7rem; font-weight: 700;
+            letter-spacing: .08em; color: var(--text-dim); margin-top: .3rem;
+        }
+        .racing-battle-link {
+            display: inline-block; margin-top: 1rem; padding: .5rem 1.2rem;
+            background: var(--accent); color: #fff; border-radius: 4px;
+            font-family: var(--font-condensed); font-weight: 700; font-size: .85rem;
+            letter-spacing: .08em; text-decoration: none; text-transform: uppercase;
+        }
+        .racing-battle-link:hover { background: var(--gold); }
+
         .hidden { display: none !important; }
 
         @media (max-width: 900px) {
             .bp-grid { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(5, 1fr); }
             .bp-log { display: none; }
+            .pipeline-stage { font-size: .58rem; padding: .15rem .35rem; }
         }
     </style>
 </head>
@@ -286,29 +349,20 @@
             </div>
         </div>
 
+        <!-- Stage pipeline -->
+        <div id="pipeline" class="bp-pipeline"></div>
+
         <!-- Body: grid + log -->
         <div class="bp-body">
             <div id="map-grid" class="bp-grid">
                 <!-- Maps injected by JS -->
             </div>
 
-            <!-- Results (replaces grid when DECIDER) -->
-            <div id="results-view" class="bp-results">
-                <div class="bp-results-grid">
-                    <div class="bp-result-card area-home-b">
-                        <div class="bp-result-label">Team B Home</div>
-                        <div id="res-home-b"></div>
-                    </div>
-                    <div class="bp-result-card area-home-a">
-                        <div class="bp-result-label">Team A Home</div>
-                        <div id="res-home-a"></div>
-                    </div>
-                    <div class="bp-result-card area-decider">
-                        <div class="bp-result-label decider-label">Decider</div>
-                        <div id="res-decider"></div>
-                    </div>
-                </div>
-            </div>
+            <!-- Racing waiting view (shown during RACING phase) -->
+            <div id="racing-view" class="bp-racing"></div>
+
+            <!-- Results (shown when DECIDER/COMPLETE) -->
+            <div id="results-view" class="bp-results"></div>
 
             <!-- Log sidebar -->
             <div class="bp-log">

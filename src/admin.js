@@ -868,22 +868,29 @@ async function createBattle() {
   const tA = teamsCache.find(t => t.id === taId);
   const tB = teamsCache.find(t => t.id === tbId);
 
-  // Live battles are always BO3 (banpick produces 3 maps)
-  const format = 'BO3';
+  // Determine format from higher-ranked team's position rules
+  const higherPos = Math.min(posA, posB);
+  const format = getRules(higherPos).format;
   const sessionId = Math.random().toString(36).substring(2, 8).toUpperCase();
   const now = Timestamp.now();
   const batch = writeBatch(db);
 
+  const matchRef = doc(collection(db, 'matches'));
+
   batch.set(doc(db, 'sessions', sessionId), {
     phase: 'WAITING',
-    homeA: null, homeB: null, bans: [],
+    format,
+    round: 1,
+    homeA: null, homeB: null, bans: [], picks: [],
+    liveScore: { teamA: 0, teamB: 0 },
+    teamAHigherRank: true,
+    matchId: matchRef.id,
     history: [{ text: 'Session initialized.', timestamp: Date.now() }],
     createdAt: Date.now(),
     teamAName: tA.name, teamBName: tB.name,
     teamAClaimed: false, teamBClaimed: false
   });
 
-  const matchRef = doc(collection(db, 'matches'));
   batch.set(matchRef, {
     teamA: taId, teamB: tbId,
     teamAName: tA.name, teamBName: tB.name,

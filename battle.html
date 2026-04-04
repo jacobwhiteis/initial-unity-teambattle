@@ -200,6 +200,23 @@
             margin: 0 auto 2rem;
         }
 
+        /* Ban/pick active banner */
+        .banpick-banner {
+            text-align: center;
+            padding: 1rem 1.5rem;
+            background: rgba(80,140,200,.1);
+            border: 1px solid rgba(80,140,200,.3);
+            border-radius: 5px;
+            max-width: 800px;
+            margin: 0 auto 1rem;
+            color: var(--text-dim);
+            font-size: .88rem;
+        }
+        .banpick-banner a {
+            color: var(--accent);
+            font-weight: 700;
+        }
+
         @media (max-width: 768px) {
             .battle-teams { gap: .8rem; }
             .battle-team-name { font-size: 1.4rem; }
@@ -247,6 +264,9 @@
         <p><a id="banpickLink" href="#" target="_blank"></a></p>
         <p style="color:var(--text-mute);font-size:.82rem;margin-top:1rem;">This page will auto-update when maps are selected.</p>
     </div>
+
+    <!-- Ban/pick active banner (shown during in_progress when ban/pick resumes) -->
+    <div class="banpick-banner" id="banpickBanner" style="display:none"></div>
 
     <!-- Map cards (shown when status=in_progress or completed) -->
     <div class="map-cards" id="mapCards" style="display:none"></div>
