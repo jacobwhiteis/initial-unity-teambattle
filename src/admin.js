@@ -3,7 +3,7 @@ import {
   db, auth, discordProvider,
   collection, doc, getDoc, getDocs, query, orderBy, limit, where, onSnapshot,
   setDoc, updateDoc, deleteDoc, addDoc, writeBatch, Timestamp,
-  signInWithPopup, onAuthStateChanged, signOut
+  signInWithPopup, getAdditionalUserInfo, onAuthStateChanged, signOut
 } from './firebase.js';
 import { getTier, getRules, calcCRP } from './crp.js';
 import { finalizeMatch } from './finalize.js';
@@ -39,11 +39,12 @@ const toastEl       = document.getElementById('toast');
 // State
 // ---------------------------------------------------------------------------
 
-let currentUser    = null;
-let staffRole      = null;
-let teamsCache     = [];
-let standingsCache = [];
-let matchesCache   = [];
+let currentUser       = null;
+let staffRole         = null;
+let discordUsername   = null;
+let teamsCache        = [];
+let standingsCache    = [];
+let matchesCache      = [];
 
 // ---------------------------------------------------------------------------
 // Toast Utility
@@ -98,6 +99,10 @@ loginBtn.addEventListener('click', async () => {
   try {
     const result = await signInWithPopup(auth, discordProvider);
     currentUser = result.user;
+    const additionalInfo = getAdditionalUserInfo(result);
+    discordUsername = additionalInfo?.profile?.global_name
+      || additionalInfo?.profile?.username
+      || result.user.displayName;
     await checkStaffAccess(result.user, true);
   } catch (e) {
     console.error('Login failed:', e);
@@ -207,7 +212,6 @@ function refreshDropdowns() {
   }).join('');
   const baseOpt = '<option value="">— select team —</option>';
 
-  document.getElementById('d-team').innerHTML = baseOpt + teamOpts;
   document.getElementById('m-ta').innerHTML = baseOpt + teamOpts;
   document.getElementById('m-tb').innerHTML = baseOpt + teamOpts;
   document.getElementById('del-team').innerHTML = baseOpt + teamOpts;
@@ -839,7 +843,7 @@ async function redeemInvite(user) {
   // Create staff doc and mark invite as used
   const batch = writeBatch(db);
   batch.set(doc(db, 'staff', user.uid), {
-    discordUsername: user.displayName || 'Unknown',
+    discordUsername: discordUsername || user.displayName || 'Unknown',
     role: invite.role || 'moderator',
     inviteCode: code,
     addedAt: Timestamp.now(),
