@@ -1428,6 +1428,18 @@ textarea { resize: vertical; min-height: 70px; }
 }
 
 /* ============================================
+   DISCORD BUTTON
+   ============================================ */
+.btn-discord {
+    background: #5865F2;
+    color: #fff;
+    margin-top: 1rem;
+}
+.btn-discord:hover {
+    background: #4752c4;
+}
+
+/* ============================================
    RESPONSIVE
    ============================================ */
 @media (max-width: 768px) {

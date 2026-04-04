@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map Ban/Pick — IU Team Battles</title>
+    <link rel="icon" type="image/png" sizes="48x48" href="/img/iur-logo.png">
+    <link rel="stylesheet" href="/src/styles/global.css">
+    <style>
+        html, body { height: 100%; overflow: hidden; }
+        body { display: flex; flex-direction: column; }
+
+        /* ===== LOBBY ===== */
+        .lobby-screen {
+            flex: 1; display: flex; align-items: center; justify-content: center;
+        }
+        .lobby-card {
+            background: var(--surface); border: 1px solid var(--border); border-radius: 5px;
+            padding: 2rem; max-width: 420px; width: 100%; text-align: center;
+        }
+        .lobby-card h2 {
+            font-family: var(--font-heading); font-size: 1.8rem; letter-spacing: .1em;
+            color: var(--text); margin-bottom: 1.2rem;
+        }
+        .lobby-input {
+            width: 100%; background: var(--panel); border: 1px solid var(--border);
+            border-radius: 4px; color: var(--text); font-family: var(--font-body);
+            font-size: .92rem; padding: .55rem .8rem; outline: none; margin-bottom: .8rem;
+        }
+        .lobby-input:focus { border-color: var(--gold-dim); }
+        .lobby-label {
+            display: block; font-family: var(--font-condensed); font-size: .72rem;
+            font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+            color: var(--text-dim); margin-bottom: .3rem; text-align: left;
+        }
+        .lobby-btn {
+            width: 100%; padding: .6rem; border: 1px solid var(--border); border-radius: 4px;
+            font-family: var(--font-condensed); font-weight: 700; font-size: .88rem;
+            letter-spacing: .1em; text-transform: uppercase; cursor: pointer;
+            transition: all .12s; margin-bottom: .5rem;
+        }
+        .lobby-btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .lobby-btn-primary:hover { background: var(--gold); }
+        .lobby-btn-outline { background: none; color: var(--text-dim); }
+        .lobby-btn-outline:hover { color: var(--text); border-color: var(--text-mute); }
+        .lobby-btn-spectate { background: none; color: var(--text-mute); border-color: var(--text-mute); font-size: .78rem; }
+        .lobby-btn-spectate:hover { color: var(--text-dim); }
+        .lobby-sep { height: 1px; background: var(--border); margin: .6rem 0; }
+        .lobby-copy {
+            background: none; border: none; color: var(--text-mute); cursor: pointer;
+            font-size: .8rem; font-family: var(--font-condensed); letter-spacing: .05em;
+            padding: .3rem 0; margin-bottom: .6rem;
+        }
+        .lobby-copy:hover { color: var(--accent); }
+
+        /* ===== GAME SCREEN ===== */
+        .game-screen {
+            flex: 1; display: flex; flex-direction: column; padding: 0;
+            overflow: hidden;
+        }
+
+        /* Status bar */
+        .bp-status {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: .6rem 1.2rem; background: var(--header-bg);
+            border-bottom: 1px solid var(--border); flex-shrink: 0;
+        }
+        .bp-meta { font-size: .78rem; color: var(--text-mute); }
+        .bp-meta span { color: var(--text-dim); }
+        .bp-turn {
+            font-family: var(--font-heading); font-size: 1.6rem; letter-spacing: .08em;
+            text-align: center; flex: 1;
+        }
+        .bp-badge {
+            font-family: var(--font-condensed); font-size: .72rem; font-weight: 700;
+            letter-spacing: .08em; padding: .2rem .6rem; border-radius: 3px;
+        }
+        .bp-badge-waiting { background: rgba(100,100,100,.2); color: var(--text-mute); border: 1px solid var(--text-mute); }
+        .bp-badge-active { background: rgba(200,146,42,.2); color: #d4a035; border: 1px solid rgba(200,146,42,.35); }
+
+        /* Main layout: grid + log */
+        .bp-body {
+            flex: 1; display: flex; overflow: hidden;
+        }
+
+        /* Map grid — 3 rows x 5 cols to fit all 15 maps */
+        .bp-grid {
+            flex: 1; display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 6px; padding: 6px;
+            overflow: hidden;
+        }
+
+        /* Map card */
+        .bp-map {
+            position: relative; border-radius: 4px; overflow: hidden;
+            border: 2px solid var(--border); cursor: pointer;
+            transition: border-color .15s, box-shadow .15s, transform .15s;
+        }
+        .bp-map-bg {
+            position: absolute; inset: 0; background-size: cover; background-position: center;
+            transition: transform .2s, filter .2s, opacity .2s;
+        }
+        .bp-map-name {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,.85), transparent);
+            padding: .4rem .6rem; font-family: var(--font-condensed);
+            font-size: .82rem; font-weight: 700; letter-spacing: .05em;
+            text-transform: uppercase; z-index: 5;
+        }
+        .bp-map-overlay {
+            position: absolute; inset: 0; display: flex; align-items: center;
+            justify-content: center; opacity: 0; transition: opacity .15s;
+            z-index: 15; pointer-events: none;
+        }
+        .bp-map-overlay-text {
+            font-family: var(--font-condensed); font-size: 1rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: .1em;
+            padding: .3rem .8rem; border: 2px solid #fff; background: rgba(0,0,0,.6);
+        }
+
+        /* Hoverable states */
+        .bp-map.banning:not(.disabled):not(.picked):not(.banned):hover { border-color: var(--loss); box-shadow: 0 0 10px rgba(232,64,64,.3); }
+        .bp-map.banning:not(.disabled):not(.picked):not(.banned):hover .bp-map-overlay { opacity: 1; }
+        .bp-map.banning:not(.disabled):not(.picked):not(.banned):hover .bp-map-overlay-text { border-color: var(--loss); color: var(--loss); }
+        .bp-map.picking:not(.disabled):not(.picked):not(.banned):hover { border-color: var(--win); box-shadow: 0 0 10px rgba(60,179,113,.3); }
+        .bp-map.picking:not(.disabled):not(.picked):not(.banned):hover .bp-map-overlay { opacity: 1; }
+        .bp-map.picking:not(.disabled):not(.picked):not(.banned):hover .bp-map-overlay-text { border-color: var(--win); color: var(--win); }
+
+        /* Disabled */
+        .bp-map.disabled { pointer-events: none; border-color: rgba(34,34,34,.5); }
+        .bp-map.disabled .bp-map-bg { opacity: .25; filter: grayscale(100%); }
+
+        /* Banned */
+        .bp-map.banned { pointer-events: none; border-color: var(--border); }
+        .bp-map.banned .bp-map-bg { filter: grayscale(100%); opacity: .3; }
+        .bp-map.banned::after {
+            content: 'BANNED'; position: absolute; inset: 0; display: flex;
+            align-items: center; justify-content: center; z-index: 10;
+            font-family: var(--font-heading); font-size: 1.4rem; letter-spacing: .15em;
+            color: var(--loss); background: rgba(0,0,0,.4);
+            transform: rotate(-12deg); text-shadow: 0 0 8px rgba(0,0,0,.8);
+        }
+
+        /* Picked (HOME) */
+        .bp-map.picked { border-color: var(--win); }
+        .bp-map.picked::after {
+            content: 'HOME'; position: absolute; top: 0; left: 0; right: 0;
+            padding: .25rem; text-align: center; z-index: 10;
+            font-family: var(--font-heading); font-size: 1rem; letter-spacing: .12em;
+            background: rgba(60,179,113,.85); color: #fff;
+        }
+
+        /* Decider */
+        .bp-map.decider { border-color: #d4a035; box-shadow: 0 0 15px rgba(212,160,53,.3); }
+        .bp-map.decider::after {
+            content: 'DECIDER'; position: absolute; top: 0; left: 0; right: 0;
+            padding: .25rem; text-align: center; z-index: 10;
+            font-family: var(--font-heading); font-size: 1rem; letter-spacing: .12em;
+            background: rgba(212,160,53,.9); color: #000; font-weight: 700;
+        }
+
+        /* Session log sidebar */
+        .bp-log {
+            width: 220px; flex-shrink: 0; background: var(--surface);
+            border-left: 1px solid var(--border); display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+        .bp-log-header {
+            padding: .5rem .8rem; font-family: var(--font-condensed); font-size: .72rem;
+            font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+            color: var(--text-mute); border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .bp-log-body {
+            flex: 1; overflow-y: auto; padding: .5rem .8rem;
+            font-size: .78rem; color: var(--text-dim);
+        }
+        .log-entry {
+            padding: .25rem 0; border-bottom: 1px solid rgba(34,34,34,.5);
+        }
+        .log-entry:last-child { border-bottom: none; }
+
+        /* Results view */
+        .bp-results {
+            display: none; flex: 1; align-items: center; justify-content: center;
+            padding: 1rem;
+        }
+        .bp-results.visible { display: flex; }
+        .bp-results-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            grid-template-areas: "homeB homeA" "decider decider";
+            gap: 1.2rem; max-width: 700px; width: 100%;
+        }
+        .bp-result-card { text-align: center; }
+        .bp-result-card.area-home-a { grid-area: homeA; }
+        .bp-result-card.area-home-b { grid-area: homeB; }
+        .bp-result-card.area-decider { grid-area: decider; max-width: 320px; justify-self: center; }
+        .bp-result-label {
+            font-family: var(--font-heading); font-size: 1.1rem; letter-spacing: .08em;
+            margin-bottom: .5rem; color: var(--text-dim);
+        }
+        .bp-result-label.decider-label { color: #d4a035; }
+
+        /* Waiting dots */
+        .waiting-indicator { display: inline-block; margin-left: .5rem; }
+        .waiting-indicator span {
+            display: inline-block; width: 6px; height: 6px; margin: 0 2px;
+            background: var(--text-mute); border-radius: 50%;
+            animation: bp-pulse 1.4s infinite ease-in-out both;
+        }
+        .waiting-indicator span:nth-child(1) { animation-delay: -.32s; }
+        .waiting-indicator span:nth-child(2) { animation-delay: -.16s; }
+        @keyframes bp-pulse {
+            0%, 80%, 100% { transform: scale(.6); opacity: .4; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Pulse on your turn */
+        @keyframes bp-pulse-ban {
+            0%, 100% { box-shadow: inset 0 0 15px rgba(232,64,64,.1); border-color: rgba(232,64,64,.4); }
+            50% { box-shadow: inset 0 0 30px rgba(232,64,64,.3); border-color: rgba(232,64,64,.8); }
+        }
+        @keyframes bp-pulse-pick {
+            0%, 100% { box-shadow: inset 0 0 15px rgba(60,179,113,.1); border-color: rgba(60,179,113,.4); }
+            50% { box-shadow: inset 0 0 30px rgba(60,179,113,.3); border-color: rgba(60,179,113,.8); }
+        }
+        .bp-status.pulse-ban.your-turn { animation: bp-pulse-ban 1.2s infinite ease-in-out; }
+        .bp-status.pulse-pick.your-turn { animation: bp-pulse-pick 1.2s infinite ease-in-out; }
+
+        .hidden { display: none !important; }
+
+        @media (max-width: 900px) {
+            .bp-grid { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(5, 1fr); }
+            .bp-log { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Minimal header -->
+    <nav class="site-nav" style="height:44px;--nav-height:44px;">
+        <div class="nav-inner">
+            <a href="/" class="nav-logo" style="font-size:1.1rem;"><span>IU</span> Ban/Pick</a>
+        </div>
+    </nav>
+
+    <!-- LOBBY -->
+    <div id="lobby-screen" class="lobby-screen" style="padding-top:44px;">
+        <!-- Create -->
+        <div id="create-section" class="lobby-card">
+            <h2>Setup Match</h2>
+            <label class="lobby-label">Team Higher on LB</label>
+            <input type="text" class="lobby-input" id="input-team-a">
+            <label class="lobby-label">Team Lower on LB</label>
+            <input type="text" class="lobby-input" id="input-team-b">
+            <button class="lobby-btn lobby-btn-primary" id="create-session-btn">Create Session</button>
+        </div>
+        <!-- Join -->
+        <div id="join-section" class="lobby-card hidden">
+            <h2>Choose Role</h2>
+            <button class="lobby-copy" id="btn-copy-link">Copy invite link</button>
+            <button class="lobby-btn lobby-btn-outline" id="btn-join-a">Join as Team A</button>
+            <button class="lobby-btn lobby-btn-outline" id="btn-join-b">Join as Team B</button>
+            <div class="lobby-sep"></div>
+            <button class="lobby-btn lobby-btn-spectate" id="btn-spectate">Spectate</button>
+        </div>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="game-screen" class="game-screen hidden" style="padding-top:44px;">
+        <!-- Status bar -->
+        <div id="status-bar" class="bp-status">
+            <div class="bp-meta">
+                <div>Session: <span id="display-session-id">---</span>
+                    <button id="btn-copy-game" class="lobby-copy" style="margin:0;padding:0 .3rem;">copy</button>
+                </div>
+                <div>Role: <span id="player-role" style="color:var(--text)">---</span></div>
+            </div>
+            <div class="bp-turn">
+                <div id="turn-display">Waiting...</div>
+                <div id="turn-subtext" style="font-family:var(--font-condensed);font-size:.75rem;color:var(--text-dim);letter-spacing:.05em;"></div>
+            </div>
+            <div>
+                <span id="connection-status" class="bp-badge bp-badge-waiting">Waiting</span>
+            </div>
+        </div>
+
+        <!-- Body: grid + log -->
+        <div class="bp-body">
+            <div id="map-grid" class="bp-grid">
+                <!-- Maps injected by JS -->
+            </div>
+
+            <!-- Results (replaces grid when DECIDER) -->
+            <div id="results-view" class="bp-results">
+                <div class="bp-results-grid">
+                    <div class="bp-result-card area-home-b">
+                        <div class="bp-result-label">Team B Home</div>
+                        <div id="res-home-b"></div>
+                    </div>
+                    <div class="bp-result-card area-home-a">
+                        <div class="bp-result-label">Team A Home</div>
+                        <div id="res-home-a"></div>
+                    </div>
+                    <div class="bp-result-card area-decider">
+                        <div class="bp-result-label decider-label">Decider</div>
+                        <div id="res-decider"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Log sidebar -->
+            <div class="bp-log">
+                <div class="bp-log-header">Session Log</div>
+                <div id="history-log" class="bp-log-body"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/banpick.js"></script>
+</body>
+</html>

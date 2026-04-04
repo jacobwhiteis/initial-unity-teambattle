@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, getDoc, getDocs, query, orderBy, limit, where, onSnapshot } from 'firebase/firestore';
+import { getFirestore, collection, doc, getDoc, getDocs, query, orderBy, limit, where, onSnapshot, setDoc, updateDoc, deleteDoc, addDoc, writeBatch, Timestamp, arrayUnion } from 'firebase/firestore';
 import { getAuth, signInWithPopup, OAuthProvider, onAuthStateChanged, signOut } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -20,5 +20,6 @@ const discordProvider = new OAuthProvider('oidc.discord');
 export {
   db, auth, discordProvider,
   collection, doc, getDoc, getDocs, query, orderBy, limit, where, onSnapshot,
+  setDoc, updateDoc, deleteDoc, addDoc, writeBatch, Timestamp, arrayUnion,
   signInWithPopup, onAuthStateChanged, signOut
 };

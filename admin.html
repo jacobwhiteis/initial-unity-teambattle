@@ -9,9 +9,12 @@
 <body>
     <nav class="site-nav">
         <div class="nav-inner">
-            <a href="/" class="nav-logo"><span>IU</span> Team Battles</a>
+            <a href="/" class="nav-logo">
+                <img src="/img/iur-logo.png" alt="" class="nav-logo-img">
+                <span>IU</span> Team Battles
+            </a>
             <ul class="nav-links">
-                <li><a href="/">Standings</a></li>
+                <li><a href="/">Leaderboard</a></li>
                 <li><a href="https://initialunityreborn.com" target="_blank">Main Site</a></li>
                 <li><a href="/admin" class="staff-login active">Staff</a></li>
             </ul>
@@ -21,24 +24,361 @@
         </div>
     </nav>
     <div class="nav-mobile-overlay" id="mobileMenu">
-        <a href="/">Standings</a>
+        <a href="/">Leaderboard</a>
         <a href="https://initialunityreborn.com" target="_blank">Main Site</a>
         <a href="/admin" class="active">Staff</a>
     </div>
 
-    <section class="page-hero">
-        <h1><span>Staff</span> Dashboard</h1>
-        <p>Record results and manage teams</p>
-    </section>
-
     <main class="content-section">
-        <div id="adminContainer">
-            <!-- Placeholder — Phase 3 will build this out -->
-            <div style="text-align: center; padding: 60px 0; color: var(--text-dim);">
-                <p style="font-size: 1.2rem; margin-bottom: 8px;">Staff dashboard coming soon</p>
-                <p>Discord OAuth login and result entry will be added in Phase 3</p>
+
+        <!-- ===== LOGIN VIEW ===== -->
+        <div id="loginView">
+            <div class="mod-login-wrap">
+                <div class="card">
+                    <h3>Staff Dashboard</h3>
+                    <p>You must sign in with Discord to access the staff dashboard. Only authorized staff members may enter.</p>
+                    <button class="btn btn-discord btn-full" id="loginBtn">Sign in with Discord</button>
+                    <div id="authError" style="display:none">
+                        <p class="err-msg" style="display:block;margin-bottom:1rem;">Not authorized — your Discord account does not have staff access.</p>
+                        <div class="form-group">
+                            <label for="invite-code">Have an invite code?</label>
+                            <input type="text" id="invite-code" placeholder="Enter invite code">
+                        </div>
+                        <button class="btn btn-primary btn-full" id="redeemInviteBtn">Redeem Invite</button>
+                        <div id="inviteError" class="err-msg" style="display:none;margin-top:.5rem;"></div>
+                    </div>
+                    <div id="authLoading" style="display:none">Authenticating&hellip;</div>
+                </div>
             </div>
         </div>
+
+        <!-- ===== DASHBOARD VIEW ===== -->
+        <div id="dashView" style="display:none">
+
+            <!-- Header bar -->
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:2rem;">
+                <div>
+                    <h1 class="page-title" style="font-size:2rem;margin:0;">Staff Dashboard</h1>
+                    <p style="margin:0;color:var(--text-dim);">Manage teams, drivers &amp; matches</p>
+                </div>
+                <div style="display:flex;align-items:center;gap:.75rem;">
+                    <span id="staffUser"></span>
+                    <button class="btn btn-ghost btn-sm" id="logoutBtn">Logout</button>
+                </div>
+            </div>
+
+            <div class="mod-grid">
+
+                <!-- Sidebar -->
+                <aside class="mod-sidebar">
+                    <div class="mod-sidebar-hd">Sections</div>
+                    <button class="mod-nav active" data-section="sec-teams">Teams</button>
+                    <button class="mod-nav" data-section="sec-drivers">Drivers</button>
+                    <button class="mod-nav" data-section="sec-matches">Log Match</button>
+                    <button class="mod-nav" data-section="sec-battles">Battles</button>
+                    <button class="mod-nav" data-section="sec-invites" id="invitesNav" style="display:none">Invites</button>
+                    <button class="mod-nav" data-section="sec-danger" id="dangerNav" style="display:none">Danger Zone</button>
+                </aside>
+
+                <!-- Content panels -->
+                <div>
+
+                    <!-- ===== TEAMS ===== -->
+                    <div class="mod-section active" id="sec-teams">
+
+                        <div class="card">
+                            <h4>Create / Edit Team</h4>
+                            <div class="fr2">
+                                <div class="form-group">
+                                    <label for="t-name">Team Name</label>
+                                    <input type="text" id="t-name" placeholder="Team name">
+                                </div>
+                                <div class="form-group">
+                                    <label for="t-tag">Tag</label>
+                                    <input type="text" id="t-tag" maxlength="8" placeholder="e.g. TKR">
+                                </div>
+                            </div>
+                            <div class="fr2">
+                                <div class="form-group">
+                                    <label for="t-captain">Captain Discord ID</label>
+                                    <input type="text" id="t-captain" placeholder="Discord user ID">
+                                </div>
+                                <div class="form-group">
+                                    <label for="t-active">Active</label>
+                                    <label style="display:flex;align-items:center;gap:.5rem;margin-top:.35rem;">
+                                        <input type="checkbox" id="t-active" checked>
+                                        <span>Team is active</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <input type="hidden" id="t-editing">
+                            <div class="form-actions">
+                                <button class="btn btn-primary" id="saveTeamBtn">Save Team</button>
+                                <button class="btn btn-ghost" id="clearTeamBtn">Clear</button>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h4>All Teams</h4>
+                            <div class="mod-list" id="mod-team-list">
+                                <p class="empty-state">No teams yet.</p>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- ===== DRIVERS ===== -->
+                    <div class="mod-section" id="sec-drivers">
+
+                        <div class="card">
+                            <h4>Create / Edit Driver</h4>
+                            <div class="fr2">
+                                <div class="form-group">
+                                    <label for="d-name">Driver Name</label>
+                                    <input type="text" id="d-name" placeholder="Driver name">
+                                </div>
+                                <div class="form-group">
+                                    <label for="d-car">Car</label>
+                                    <select id="d-car">
+                                        <option value="">— select car —</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="fr2">
+                                <div class="form-group">
+                                    <label for="d-role">Role</label>
+                                    <select id="d-role">
+                                        <option value="Member">Member</option>
+                                        <option value="Co-Leader">Co-Leader</option>
+                                        <option value="Leader">Leader</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="d-team">Team</label>
+                                    <select id="d-team">
+                                        <option value="">— select team —</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <input type="hidden" id="d-editing">
+                            <div class="form-actions">
+                                <button class="btn btn-primary" id="saveDriverBtn">Save Driver</button>
+                                <button class="btn btn-ghost" id="clearDriverBtn">Clear</button>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h4>All Drivers</h4>
+                            <div class="mod-list" id="mod-driver-list">
+                                <p class="empty-state">No drivers yet.</p>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- ===== MATCHES ===== -->
+                    <div class="mod-section" id="sec-matches">
+
+                        <div class="card">
+                            <h4>Log Match</h4>
+
+                            <div class="info-box" id="match-info-box">Select both teams to see tier info and CRP preview.</div>
+
+                            <div class="fr2">
+                                <div class="form-group">
+                                    <label for="m-ta">Team A</label>
+                                    <select id="m-ta">
+                                        <option value="">— select team —</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="m-tb">Team B</label>
+                                    <select id="m-tb">
+                                        <option value="">— select team —</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="fr2">
+                                <div class="form-group">
+                                    <label for="m-win">Winner</label>
+                                    <select id="m-win">
+                                        <option value="">— select winner —</option>
+                                        <option value="A">Team A wins</option>
+                                        <option value="B">Team B wins</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="m-home">Home Map</label>
+                                    <select id="m-home">
+                                        <option value="none">No home map bonus</option>
+                                        <option value="A">Team A on home map</option>
+                                        <option value="B">Team B on home map</option>
+                                        <option value="both">Both teams on home maps</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="fr2">
+                                <div class="form-group">
+                                    <label for="m-score-a">Score A</label>
+                                    <input type="number" id="m-score-a" min="0" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="m-score-b">Score B</label>
+                                    <input type="number" id="m-score-b" min="0" value="0">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="m-notes">Notes</label>
+                                <textarea id="m-notes" placeholder="Optional match notes..."></textarea>
+                            </div>
+
+                            <div class="crp-preview" id="crp-preview" style="display:none">
+                                <h5>CRP Preview</h5>
+                                <div id="crp-rows"></div>
+                            </div>
+
+                            <div class="form-actions" style="margin-top:1.25rem;">
+                                <button class="btn btn-primary" id="logMatchBtn">Log Match &amp; Apply</button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- ===== BATTLES ===== -->
+                    <div class="mod-section" id="sec-battles">
+                        <div class="card">
+                            <h4>Create Battle</h4>
+                            <div class="info-box">Create a live team battle with ban/pick integration. A banpick session link will be generated for the teams.</div>
+                            <div class="fr2">
+                                <div class="form-group">
+                                    <label for="b-ta">Team A</label>
+                                    <select id="b-ta"><option value="">— select team —</option></select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="b-tb">Team B</label>
+                                    <select id="b-tb"><option value="">— select team —</option></select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="b-thread">Discord Thread ID <span style="font-weight:400;text-transform:none;font-size:.65rem">(optional — for live updates)</span></label>
+                                <input type="text" id="b-thread" placeholder="e.g. 1234567890123456789">
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn btn-primary" id="createBattleBtn">Create Battle</button>
+                            </div>
+                            <div id="battleCreatedResult" style="display:none;margin-top:1rem;">
+                                <div class="info-box">
+                                    <div style="margin-bottom:.5rem;color:var(--text)">Battle created!</div>
+                                    <div style="margin-bottom:.3rem"><b>Ban/Pick Link:</b> <a id="battleBanpickLink" href="#" target="_blank" style="color:var(--accent)"></a></div>
+                                    <div><b>Battle Page:</b> <a id="battlePageLink" href="#" target="_blank" style="color:var(--accent)"></a></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <h4>Active Battles</h4>
+                            <div class="mod-list" id="active-battle-list"><p class="empty-state">No active battles.</p></div>
+                        </div>
+                        <div class="card">
+                            <h4>Recent Battles</h4>
+                            <div class="mod-list" id="recent-battle-list"><p class="empty-state">Loading...</p></div>
+                        </div>
+                    </div>
+
+                    <!-- ===== INVITES ===== -->
+                    <div class="mod-section" id="sec-invites">
+
+                        <div class="card">
+                            <h4>Generate Invite Code</h4>
+                            <div class="info-box">Create a one-time invite code to give to a staff member. They sign in with Discord, enter the code, and get access.</div>
+                            <div class="fr2">
+                                <div class="form-group">
+                                    <label for="inv-role">Role</label>
+                                    <select id="inv-role">
+                                        <option value="moderator">Moderator</option>
+                                        <option value="admin">Admin</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>&nbsp;</label>
+                                    <button class="btn btn-primary btn-full" id="genInviteBtn">Generate Code</button>
+                                </div>
+                            </div>
+                            <div id="genInviteResult" style="display:none;margin-top:1rem;">
+                                <div class="info-box" style="font-size:1.1rem;font-weight:700;letter-spacing:.08em;text-align:center;color:var(--accent);" id="genInviteCode"></div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h4>Active Invites</h4>
+                            <div class="mod-list" id="invite-list">
+                                <p class="empty-state">No active invites.</p>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h4>Staff Members</h4>
+                            <div class="mod-list" id="staff-list">
+                                <p class="empty-state">Loading...</p>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- ===== DANGER ZONE ===== -->
+                    <div class="mod-section" id="sec-danger">
+
+                        <div class="card">
+                            <h4>Discord Webhook</h4>
+                            <div class="info-box">Set the Discord webhook URL for posting battle updates to threads.</div>
+                            <div class="form-group">
+                                <label for="webhook-url">Webhook URL</label>
+                                <input type="text" id="webhook-url" placeholder="https://discord.com/api/webhooks/...">
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn btn-primary" id="saveWebhookBtn">Save Webhook</button>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h4>Season Reset</h4>
+                            <div class="info-box">Resets <strong>all teams</strong>: clears match history, sets CRP to 0, resets W/L to 0/0 and streaks to 0. Positions and team/driver data are kept.</div>
+                            <div class="form-actions">
+                                <button class="btn btn-danger" id="seasonResetBtn">Reset Season</button>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h4>Delete Team</h4>
+                            <div class="form-group">
+                                <label for="del-team">Select Team</label>
+                                <select id="del-team">
+                                    <option value="">— select team —</option>
+                                </select>
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn btn-danger" id="delTeamBtn">Delete Team</button>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h4>Delete Match</h4>
+                            <div class="form-group">
+                                <label for="del-match">Select Recent Match</label>
+                                <select id="del-match">
+                                    <option value="">— select match —</option>
+                                </select>
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn btn-danger" id="delMatchBtn">Delete Match</button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <footer class="site-footer">
@@ -47,6 +387,8 @@
             <div class="footer-copy">Fan-made racing game inspired by Initial D</div>
         </div>
     </footer>
+
+    <div id="toast"></div>
 
     <script type="module" src="/src/admin.js"></script>
 </body>
