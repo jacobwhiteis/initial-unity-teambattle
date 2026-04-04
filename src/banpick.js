@@ -372,8 +372,13 @@ async function handleMapClick(mapId) {
 
     } else if (localState.phase === PHASE.PICK_HOME_B) {
         updates.homeB = mapId;
-        if (localState.matchId) {
-            // Live battle: go to RACING, battle.js will orchestrate
+        if (format === 'BO5') {
+            // BO5: go straight to secondary bans (no racing pause after homes)
+            // Higher-ranked (A) bans first (score is 0-0, tied)
+            updates.phase = PHASE.BAN_A;
+            updates.history = arrayUnion({ text: `${nameB} picked HOME: ${mapName}`, timestamp: now });
+        } else if (localState.matchId) {
+            // BO3 live battle: go to RACING, battle.js will orchestrate
             updates.phase = PHASE.RACING;
             updates.history = arrayUnion(
                 { text: `${nameB} picked HOME: ${mapName}`, timestamp: now },
@@ -400,11 +405,10 @@ async function handleMapClick(mapId) {
     } else if (localState.phase === PHASE.PICK_MAP_A) {
         updates.picks = arrayUnion(mapId);
         updates.history = arrayUnion({ text: `${nameA} picked MAP: ${mapName}`, timestamp: now });
-        // Determine if this is first or second pick
         const pickCount = (localState.picks || []).length + 1;
         if (pickCount >= 2) {
             updates.phase = PHASE.RACING;
-            updates.history = arrayUnion({ text: 'Secondary maps selected. Waiting for race results.', timestamp: now + 1 });
+            updates.history = arrayUnion({ text: 'All maps selected. Waiting for race results.', timestamp: now + 1 });
         } else {
             updates.phase = PHASE.PICK_MAP_B;
         }
@@ -415,7 +419,7 @@ async function handleMapClick(mapId) {
         const pickCount = (localState.picks || []).length + 1;
         if (pickCount >= 2) {
             updates.phase = PHASE.RACING;
-            updates.history = arrayUnion({ text: 'Secondary maps selected. Waiting for race results.', timestamp: now + 1 });
+            updates.history = arrayUnion({ text: 'All maps selected. Waiting for race results.', timestamp: now + 1 });
         } else {
             updates.phase = PHASE.PICK_MAP_A;
         }
@@ -434,8 +438,8 @@ async function handleMapClick(mapId) {
 function getNextBanPhase(banningTeam, predictedBans, state, format, round, score) {
     const picks = state.picks || [];
 
-    // BO5 round 2: exactly 4 bans, then transition to PICK_MAP
-    if (format === 'BO5' && round === 2) {
+    // BO5 round 1: exactly 4 bans (secondary), then transition to PICK_MAP
+    if (format === 'BO5' && round === 1) {
         if (predictedBans.length >= 4) {
             // Transition to pick phase — determine who picks first
             const firstPicker = getFirstPicker(score, state.teamAHigherRank);
@@ -445,7 +449,7 @@ function getNextBanPhase(banningTeam, predictedBans, state, format, round, score
         return banningTeam === 'A' ? PHASE.BAN_B : PHASE.BAN_A;
     }
 
-    // Decider round (BO3 round 2, or BO5 round 3): ban until 1 map left
+    // Decider round (BO3 round 2, or BO5 round 2): ban until 1 map left
     if (checkDeciderPhase(predictedBans, state.homeA, state.homeB, picks)) {
         return PHASE.DECIDER;
     }
@@ -868,13 +872,12 @@ function getPipelineStages() {
     if (format === 'BO5') {
         const stages = [
             { id: 'home-picks', label: 'HOME PICKS' },
-            { id: 'race-homes', label: 'RACE HOMES' },
             { id: 'secondary-bans', label: 'BANS' },
             { id: 'secondary-picks', label: 'PICKS' },
-            { id: 'race-secondary', label: 'RACE' },
+            { id: 'race', label: 'RACE' },
         ];
-        // Decider stages only appear once round 3 is reached
-        if (round >= 3) {
+        // Decider stages only appear once round 2 is reached
+        if (round >= 2) {
             stages.push({ id: 'decider-bans', label: 'DECIDER BANS' });
             stages.push({ id: 'race-decider', label: 'DECIDER' });
         }
@@ -900,11 +903,19 @@ function getCurrentStageId() {
     const round = localState.round || 1;
 
     if (phase === PHASE.WAITING || phase === PHASE.PICK_HOME_A || phase === PHASE.PICK_HOME_B) return 'home-picks';
+
+    if (format === 'BO5') {
+        if (round === 1 && (phase === PHASE.BAN_A || phase === PHASE.BAN_B)) return 'secondary-bans';
+        if (round === 1 && (phase === PHASE.PICK_MAP_A || phase === PHASE.PICK_MAP_B)) return 'secondary-picks';
+        if (phase === PHASE.RACING && round === 1) return 'race';
+        if (round === 2 && (phase === PHASE.BAN_A || phase === PHASE.BAN_B)) return 'decider-bans';
+        if (phase === PHASE.DECIDER || phase === PHASE.COMPLETE) return 'race-decider';
+        return 'home-picks';
+    }
+
+    // BO3
     if (phase === PHASE.RACING && round === 1) return 'race-homes';
-    if (phase === PHASE.RACING && round === 2) return 'race-secondary';
-    if (format === 'BO5' && round === 2 && (phase === PHASE.BAN_A || phase === PHASE.BAN_B)) return 'secondary-bans';
-    if (format === 'BO5' && round === 2 && (phase === PHASE.PICK_MAP_A || phase === PHASE.PICK_MAP_B)) return 'secondary-picks';
-    if ((phase === PHASE.BAN_A || phase === PHASE.BAN_B) && ((round >= 2 && format === 'BO3') || (round >= 3 && format === 'BO5'))) return 'decider-bans';
+    if (round >= 2 && (phase === PHASE.BAN_A || phase === PHASE.BAN_B)) return 'decider-bans';
     if (phase === PHASE.DECIDER || phase === PHASE.COMPLETE) return 'race-decider';
     return 'home-picks';
 }

@@ -235,51 +235,44 @@ async function addMapsForRound(round) {
 
   try {
     if (round === 1) {
-      // Round 1: home maps — transition match to in_progress
+      // Round 1 — transition match to in_progress
       // Guard: only transition if still in banpick status
       if (matchData.status !== 'banpick') { transitioning = false; return; }
 
       const homeAMap = MAPS.find(m => m.id === sessionData.homeA);
       const homeBMap = MAPS.find(m => m.id === sessionData.homeB);
+      const picks = sessionData.picks || [];
+      const format = matchData.format || 'BO3';
 
       const mapResults = [
         { mapName: homeAMap?.name, mapId: sessionData.homeA, type: 'home_a', uphillWinner: null, downhillWinner: null, tiebreaker: null, mapWinner: null },
         { mapName: homeBMap?.name, mapId: sessionData.homeB, type: 'home_b', uphillWinner: null, downhillWinner: null, tiebreaker: null, mapWinner: null },
       ];
 
+      // BO5: round 1 also includes secondary picks (all 4 maps upfront)
+      if (format === 'BO5' && picks.length > 0) {
+        picks.forEach(pickId => {
+          const pickMap = MAPS.find(m => m.id === pickId);
+          mapResults.push({ mapName: pickMap?.name, mapId: pickId, type: 'pick', uphillWinner: null, downhillWinner: null, tiebreaker: null, mapWinner: null });
+        });
+      }
+
+      const banpickResult = { homeA: sessionData.homeA, homeB: sessionData.homeB };
+      if (picks.length > 0) banpickResult.picks = picks;
+
       await updateDoc(doc(db, 'matches', matchId), {
         status: 'in_progress',
-        banpickResult: { homeA: sessionData.homeA, homeB: sessionData.homeB },
+        banpickResult,
         mapResults,
       });
 
-      postToDiscord(threadId, `🗺️ **Home Maps Selected:**\nMap 1: **${homeAMap?.name}** (${teamAName} Home)\nMap 2: **${homeBMap?.name}** (${teamBName} Home)`);
-
-    } else if (round === 2 && matchData.format === 'BO5') {
-      // Round 2 (BO5): secondary picks — append to existing mapResults
-      // Guard: only add if picks aren't already in mapResults
-      const picks = sessionData.picks || [];
-      const existingResults = matchData.mapResults || [];
-      if (existingResults.some(m => m.type === 'pick')) { transitioning = false; return; }
-
-      const newMaps = picks.map((pickId, i) => {
+      let mapsMsg = `🗺️ **Maps Selected:**\nMap 1: **${homeAMap?.name}** (${teamAName} Home)\nMap 2: **${homeBMap?.name}** (${teamBName} Home)`;
+      picks.forEach((pickId, i) => {
         const pickMap = MAPS.find(m => m.id === pickId);
-        return { mapName: pickMap?.name, mapId: pickId, type: 'pick', uphillWinner: null, downhillWinner: null, tiebreaker: null, mapWinner: null };
+        mapsMsg += `\nMap ${3 + i}: **${pickMap?.name}** (Pick)`;
       });
-
-      const updatedResults = [...existingResults, ...newMaps];
-      const banpickResult = { ...matchData.banpickResult, picks };
-
-      await updateDoc(doc(db, 'matches', matchId), {
-        mapResults: updatedResults,
-        banpickResult,
-      });
-
-      const mapsMsg = picks.map((pickId, i) => {
-        const pickMap = MAPS.find(m => m.id === pickId);
-        return `Map ${3 + i}: **${pickMap?.name}** (Pick)`;
-      }).join('\n');
-      postToDiscord(threadId, `🗺️ **Secondary Maps Selected:**\n${mapsMsg}`);
+      postToDiscord(threadId, mapsMsg);
+      postToDiscord(threadId, '🏁 **Time to race!**');
     }
   } catch (e) {
     console.error('Failed to add maps for round:', e);
@@ -311,6 +304,7 @@ async function addDeciderMap() {
 
     const threadId = matchData.discordThreadId || null;
     postToDiscord(threadId, `🗺️ **Decider Map:** Map ${updatedResults.length}: **${deciderMap?.name}**`);
+    postToDiscord(threadId, '🏁 **Time to race!**');
   } catch (e) {
     console.error('Failed to add decider map:', e);
   }
@@ -549,19 +543,10 @@ function checkBanpickResumption(score, results) {
       resumeBanpick(2, 'BAN_A');
     }
   } else if (format === 'BO5') {
-    // After 2 home maps: always resume for secondary bans/picks
-    if (completedMaps === 2 && results.length === 2) {
-      // Winning/higher team bans first
-      let firstBan;
-      if (score.teamA > score.teamB) firstBan = 'BAN_A';
-      else if (score.teamB > score.teamA) firstBan = 'BAN_B';
-      else firstBan = 'BAN_A'; // Tied: higher-ranked (A) first
-      resumeBanpick(2, firstBan);
-    }
     // After 4 maps (if score is 2-2): resume for decider bans
     if (completedMaps === 4 && score.teamA === 2 && score.teamB === 2) {
       // Higher-ranked (Team A) bans first (score is tied)
-      resumeBanpick(3, 'BAN_A');
+      resumeBanpick(2, 'BAN_A');
     }
   }
 }
