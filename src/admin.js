@@ -324,23 +324,6 @@ async function saveTeam() {
   if (!name) { toast('Team name required', true); return; }
   if (!tag) { toast('Team tag required', true); return; }
 
-  // Parse initial drivers from the form (only for new teams)
-  const leaderName = document.getElementById('t-leader')?.value.trim() || '';
-  const coLeaderName = document.getElementById('t-coleader')?.value.trim() || '';
-  const driverInputs = document.querySelectorAll('.t-driver-input');
-  const initialRoster = [];
-  if (leaderName) initialRoster.push({ name: leaderName, role: 'Leader' });
-  if (coLeaderName) initialRoster.push({ name: coLeaderName, role: 'Co-Leader' });
-  driverInputs.forEach(input => {
-    const v = input.value.trim();
-    if (v) initialRoster.push({ name: v, role: 'Member' });
-  });
-
-  if (initialRoster.length > MAX_ROSTER_SIZE) {
-    toast(`Maximum ${MAX_ROSTER_SIZE} drivers per team`, true);
-    return;
-  }
-
   const batch = writeBatch(db);
 
   if (editingId) {
@@ -350,12 +333,12 @@ async function saveTeam() {
     const standingRef = doc(db, 'standings', editingId);
     batch.update(standingRef, { teamName: name, teamTag: tag });
   } else {
-    // Create new
+    // Create new — roster starts empty, drivers added via Discord bot
     const id = tag.toLowerCase();
     const teamRef = doc(db, 'teams', id);
     batch.set(teamRef, {
       name, tag, captainDiscordId: captain, active,
-      roster: initialRoster, createdAt: Timestamp.now()
+      roster: [], createdAt: Timestamp.now()
     });
     const standingRef = doc(db, 'standings', id);
     batch.set(standingRef, {
@@ -363,7 +346,7 @@ async function saveTeam() {
       wins: 0, losses: 0, mapWins: 0, mapLosses: 0, winRate: 0,
       streak: 0, rank: standingsCache.length + 1,
       crp: 0, position: null, consecutive_wins: 0,
-      roster: initialRoster, match_history: [], lastMatchDate: null
+      roster: [], match_history: [], lastMatchDate: null
     });
   }
 
@@ -397,69 +380,72 @@ function openDriverManager(teamId) {
   el.style.display = 'block';
   el.innerHTML = `
     <h4 style="margin-bottom:1rem;">${team.name} [${team.tag}] — Drivers (${drivers.length}/${MAX_ROSTER_SIZE})</h4>
+    <p style="color:var(--text-mute);font-size:.82rem;margin-bottom:1rem;">New drivers are added via Discord bot (<code>/add-team-driver</code>). Edit name or role below.</p>
     <div class="mod-list" id="dm-driver-list">
-      ${drivers.length ? drivers.map(d => `<div class="mod-list-item">
-        <span class="ml-name">${d.name}</span>
-        <span class="ml-info">${d.role || 'Member'}</span>
-        <button class="btn btn-danger btn-sm" data-dm-remove="${teamId}:${d.name}">Remove</button>
-      </div>`).join('') : '<p class="empty-state">No drivers.</p>'}
+      ${drivers.length ? drivers.map((d, i) => `<div class="mod-list-item" style="flex-wrap:wrap;gap:.5rem;">
+        <div style="display:flex;align-items:center;gap:.5rem;flex:1;min-width:200px;">
+          <input type="text" class="dm-edit-name" data-idx="${i}" value="${(d.name || '').replace(/"/g, '&quot;')}" style="flex:1;padding:.3rem .5rem;font-size:.85rem;">
+          <select class="dm-edit-role" data-idx="${i}" style="width:120px;padding:.3rem .5rem;font-size:.85rem;">
+            <option value="Member"${d.role === 'Member' ? ' selected' : ''}>Member</option>
+            <option value="Co-Leader"${d.role === 'Co-Leader' ? ' selected' : ''}>Co-Leader</option>
+            <option value="Leader"${d.role === 'Leader' ? ' selected' : ''}>Leader</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem;">
+          ${d.discordId ? `<span style="color:var(--text-mute);font-size:.75rem;">Discord: ${d.discordId}</span>` : '<span style="color:var(--text-mute);font-size:.75rem;font-style:italic;">No Discord ID</span>'}
+          <button class="btn btn-primary btn-sm dm-save-btn" data-idx="${i}">Save</button>
+          <button class="btn btn-danger btn-sm" data-dm-remove="${teamId}:${d.discordId || d.name}">Remove</button>
+        </div>
+      </div>`).join('') : '<p class="empty-state">No drivers — use <code>/add-team-driver</code> in Discord.</p>'}
     </div>
-    ${drivers.length < MAX_ROSTER_SIZE ? `
-    <div style="display:flex;gap:.5rem;margin-top:1rem;align-items:end;">
-      <div class="form-group" style="flex:1;margin:0;">
-        <label for="dm-name">Driver Name</label>
-        <input type="text" id="dm-name" placeholder="Driver name">
-      </div>
-      <div class="form-group" style="width:140px;margin:0;">
-        <label for="dm-role">Role</label>
-        <select id="dm-role">
-          <option value="Member">Member</option>
-          <option value="Co-Leader">Co-Leader</option>
-          <option value="Leader">Leader</option>
-        </select>
-      </div>
-      <button class="btn btn-primary btn-sm" id="dm-add-btn" style="height:38px;">Add</button>
-    </div>` : '<p style="color:var(--text-mute);font-size:.82rem;margin-top:.5rem;">Roster full (${MAX_ROSTER_SIZE}/${MAX_ROSTER_SIZE})</p>'}
     <div style="margin-top:.75rem;"><button class="btn btn-ghost btn-sm" id="dm-close-btn">Close</button></div>
   `;
+
+  // Wire save buttons (inline edit)
+  el.querySelectorAll('.dm-save-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const idx = parseInt(btn.dataset.idx);
+      const newName = el.querySelector(`.dm-edit-name[data-idx="${idx}"]`).value.trim();
+      const newRole = el.querySelector(`.dm-edit-role[data-idx="${idx}"]`).value;
+      if (!newName) { toast('Name cannot be empty', true); return; }
+      const t = teamsCache.find(x => x.id === teamId);
+      if (!t) return;
+      const newRoster = [...(t.roster || [])];
+      newRoster[idx] = { ...newRoster[idx], name: newName, role: newRole };
+      try {
+        const batch = writeBatch(db);
+        batch.update(doc(db, 'teams', teamId), { roster: newRoster });
+        batch.update(doc(db, 'standings', teamId), { roster: newRoster });
+        await batch.commit();
+        toast(`Updated ${newName}`);
+        openDriverManager(teamId);
+      } catch (e) {
+        toast('Failed to update driver: ' + e.message, true);
+      }
+    });
+  });
 
   // Wire remove buttons
   el.querySelectorAll('[data-dm-remove]').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const [tid, dName] = btn.dataset.dmRemove.split(':');
+      const [tid, identifier] = btn.dataset.dmRemove.split(':');
       const t = teamsCache.find(x => x.id === tid);
       if (!t) return;
-      const newRoster = (t.roster || []).filter(d => d.name !== dName);
-      const batch = writeBatch(db);
-      batch.update(doc(db, 'teams', tid), { roster: newRoster });
-      batch.update(doc(db, 'standings', tid), { roster: newRoster });
-      await batch.commit();
-      toast(`Removed ${dName}`);
-      openDriverManager(tid);
+      const newRoster = (t.roster || []).filter(d =>
+        d.discordId ? d.discordId !== identifier : d.name !== identifier
+      );
+      try {
+        const batch = writeBatch(db);
+        batch.update(doc(db, 'teams', tid), { roster: newRoster });
+        batch.update(doc(db, 'standings', tid), { roster: newRoster });
+        await batch.commit();
+        toast('Driver removed');
+        openDriverManager(tid);
+      } catch (e) {
+        toast('Failed to remove driver: ' + e.message, true);
+      }
     });
   });
-
-  // Wire add button
-  const addBtn = el.querySelector('#dm-add-btn');
-  if (addBtn) {
-    addBtn.addEventListener('click', async () => {
-      const dName = document.getElementById('dm-name').value.trim();
-      const dRole = document.getElementById('dm-role').value;
-      if (!dName) { toast('Enter a driver name', true); return; }
-      const t = teamsCache.find(x => x.id === teamId);
-      if (!t) return;
-      const roster = t.roster || [];
-      if (roster.length >= MAX_ROSTER_SIZE) { toast(`Maximum ${MAX_ROSTER_SIZE} drivers`, true); return; }
-      if (roster.find(d => d.name === dName)) { toast('Driver already on roster', true); return; }
-      const newRoster = [...roster, { name: dName, role: dRole }];
-      const batch = writeBatch(db);
-      batch.update(doc(db, 'teams', teamId), { roster: newRoster });
-      batch.update(doc(db, 'standings', teamId), { roster: newRoster });
-      await batch.commit();
-      toast(`Added ${dName}`);
-      openDriverManager(teamId);
-    });
-  }
 
   // Wire close
   el.querySelector('#dm-close-btn')?.addEventListener('click', () => {
@@ -841,9 +827,11 @@ async function redeemInvite(user) {
   }
 
   // Create staff doc and mark invite as used
+  const discordId = user.providerData?.find(p => p.providerId === 'oidc.discord')?.uid || '';
   const batch = writeBatch(db);
   batch.set(doc(db, 'staff', user.uid), {
     discordUsername: discordUsername || user.displayName || 'Unknown',
+    discordId,
     role: invite.role || 'moderator',
     inviteCode: code,
     addedAt: Timestamp.now(),

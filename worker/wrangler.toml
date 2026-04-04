@@ -1,0 +1,12 @@
+name = "iu-teambattle-bot"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+
+[vars]
+FIREBASE_PROJECT_ID = "iur-teambattle"
+
+# Secrets (set via `npx wrangler secret put`):
+# DISCORD_PUBLIC_KEY
+# DISCORD_APP_ID
+# GOOGLE_SERVICE_ACCOUNT_EMAIL
+# GOOGLE_PRIVATE_KEY

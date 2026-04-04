@@ -78,6 +78,27 @@ See `src/crp.js` for the full calculation logic and `POS_RULES` table.
 - Invite code system: admins generate codes, new staff redeem on first login
 - Roles: `admin` (full access including danger zone + invites), `moderator` (teams, drivers, match logging)
 
+### Discord Bot (Cloudflare Worker)
+
+A Cloudflare Worker at `worker/` handles Discord slash commands for driver management:
+
+- `/add-team-driver [team_tag] @player [display_name]` — adds a Discord user to a team roster
+- `/remove-team-driver [team_tag] @player` — removes a Discord user from a roster
+
+Staff-only (verified via `discordId` field on `staff` collection). New drivers must be added via bot (links Discord ID); admin dashboard can edit name/role and remove existing drivers.
+
+```bash
+cd worker
+npm run dev          # Local dev with wrangler
+npm run deploy       # Deploy to Cloudflare
+```
+
+Secrets (set via `npx wrangler secret put`): `DISCORD_PUBLIC_KEY`, `DISCORD_APP_ID`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY`
+
+Command registration: `DISCORD_APP_ID=... DISCORD_BOT_TOKEN=... node scripts/register-commands.js`
+
+The Worker uses the Firestore REST API (not firebase-admin, which doesn't run in Workers) with a Google Cloud service account for authentication.
+
 ### Hosting
 
 - `_redirects` — Netlify/Cloudflare URL rewrites (clean URLs for `/team/*`, `/match/*`, `/battle/*`, `/banpick/*`, `/admin`)
@@ -99,7 +120,7 @@ See `src/crp.js` for the full calculation logic and `POS_RULES` table.
 
 ## Key Patterns
 
-- **Roster sync:** Driver edits must update BOTH `teams/{id}.roster` and `standings/{id}.roster` atomically via `writeBatch`
+- **Roster sync:** Driver edits must update BOTH `teams/{id}.roster` and `standings/{id}.roster` atomically via `writeBatch`. Each driver has `{ name, role, discordId }`. New drivers are added exclusively via the Discord bot (which links their Discord ID); the admin UI can only edit/remove existing drivers.
 - **Match finalization:** Uses shared `finalize.js` module with `writeBatch` to atomically update match doc + both teams' standings + position shifts. Called from both admin quick-log and live battle page.
 - **Live battle flow:** Create Battle → banpick session → auto-transition to in_progress when DECIDER reached → staff records race results → auto-advance map/series winners → confirm finalization → CRP applied
 - **Discord webhooks:** Battle events post to Discord via webhook URL stored in `config/discord`. Thread ID optional — if blank, posts to webhook's default channel.
