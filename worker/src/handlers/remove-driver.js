@@ -32,12 +32,13 @@ export async function handleRemoveDriver(interaction, env) {
     return ephemeralMessage(`<@${playerId}> is not on **[${team.tag}] ${team.name}**'s roster.`);
   }
 
-  // 4. Remove driver and batch write
+  // 4. Remove driver and batch write (teams + standings + drivers)
   const newRoster = roster.filter(d => d.discordId !== playerId);
 
   await db.batchWrite([
     db.buildUpdate('teams', teamId, { roster: newRoster }),
     db.buildUpdate('standings', teamId, { roster: newRoster }),
+    db.buildDelete('drivers', playerId),
   ]);
 
   return ephemeralMessage(

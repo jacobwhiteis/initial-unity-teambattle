@@ -512,6 +512,7 @@ async function seed() {
   await clearCollection('standings');
   await clearCollection('matches');
   await clearCollection('sessions');
+  await clearCollection('drivers');
 
   // Build team ID -> tag lookup
   const tagMap = {};
@@ -534,6 +535,22 @@ async function seed() {
     console.log(`  + standings/${id}`);
   }
 
+  console.log('Seeding drivers...');
+  let driverCount = 0;
+  for (const team of teams) {
+    for (const driver of (team.roster || [])) {
+      await db.doc(`drivers/${driver.discordId}`).set({
+        name: driver.name,
+        car: driver.car,
+        teamId: team.id,
+        teamTag: team.tag,
+        teamName: team.name,
+      });
+      driverCount++;
+    }
+  }
+  console.log(`  + ${driverCount} drivers`);
+
   console.log('Seeding matches...');
   const typePattern = ['home_a', 'home_b', 'decider', 'home_a', 'home_b'];
   for (const match of matches) {
@@ -550,6 +567,7 @@ async function seed() {
   console.log('\nDone! Seeded:');
   console.log(`  ${teams.length} teams`);
   console.log(`  ${standings.length} standings`);
+  console.log(`  ${driverCount} drivers`);
   console.log(`  ${matches.length} matches`);
 
   process.exit(0);

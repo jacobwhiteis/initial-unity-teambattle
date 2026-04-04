@@ -110,4 +110,51 @@ export const CHANGE_CAR = {
   ],
 };
 
-export const ALL_COMMANDS = [ADD_TEAM_DRIVER, REMOVE_TEAM_DRIVER, CHANGE_CAR];
+export const VIEW_TEAM = {
+  name: 'view-team',
+  description: "View a team's info, roster, and record",
+  options: [
+    {
+      name: 'team_tag',
+      description: 'Team tag (e.g. MTD, AKG)',
+      type: 3, // STRING
+      required: true,
+    },
+  ],
+};
+
+export const VIEW_DRIVER = {
+  name: 'view-driver',
+  description: "View a driver's team and car",
+  options: [
+    {
+      name: 'player',
+      description: 'Discord user to look up',
+      type: 6, // USER
+      required: true,
+    },
+  ],
+};
+
+export const STANDINGS = {
+  name: 'standings',
+  description: 'View the team battle standings',
+};
+
+export const VIEW_TEAM_HISTORY = {
+  name: 'view-team-history',
+  description: "View a team's match history",
+  options: [
+    {
+      name: 'team_tag',
+      description: 'Team tag (e.g. MTD, AKG)',
+      type: 3, // STRING
+      required: true,
+    },
+  ],
+};
+
+export const ALL_COMMANDS = [
+  ADD_TEAM_DRIVER, REMOVE_TEAM_DRIVER, CHANGE_CAR,
+  VIEW_TEAM, VIEW_DRIVER, STANDINGS, VIEW_TEAM_HISTORY,
+];

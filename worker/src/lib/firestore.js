@@ -124,6 +124,13 @@ export function createFirestoreClient(env) {
       };
     },
 
+    /** Build a delete write for batchWrite. */
+    buildDelete(collectionId, documentId) {
+      return {
+        delete: `projects/${projectId}/databases/(default)/documents/${collectionId}/${documentId}`,
+      };
+    },
+
     projectId,
     basePath,
   };
