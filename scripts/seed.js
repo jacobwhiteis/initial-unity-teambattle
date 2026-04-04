@@ -1,16 +1,13 @@
-import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, setDoc, deleteDoc, getDocs, collection, Timestamp } from 'firebase/firestore';
+import { initializeApp, cert } from 'firebase-admin/app';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 
-const firebaseConfig = {
-  apiKey: "AIzaSyA7kGIAULwsycGbcJa95RKwiLiEjQmFOSA",
-  authDomain: "iur-teambattle.firebaseapp.com",
-  projectId: "iur-teambattle",
-  storageBucket: "iur-teambattle.firebasestorage.app",
-  messagingSenderId: "835376362147",
-  appId: "1:835376362147:web:a56478d5d516a35b278516"
-};
-
-const app = initializeApp(firebaseConfig);
+const app = initializeApp({
+  credential: cert({
+    projectId: 'iur-teambattle',
+    clientEmail: 'teambattle-bot@iur-teambattle.iam.gserviceaccount.com',
+    privateKey: '-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCdiZMywndwZvB9\nDk7pcxCMjhiFqOq3Yke086UfGCGPF7OlpvoQ660MA5vFHfLRGmR/gVyfatA4btOU\nhTOzEfJ0B4t08r/6Ra5asv+TBcd6L4xzGJyh4Zn9Wsf98FjQ5367dnOhIB1s0U1B\nieDZ+4y3vrjEVW7OXIJ4Gyu1G9wOIuS+/GUE+a0osMYsV7lwxERCDXcsVAP33FSA\nUH7NRelAAjWmfM46Ro+0dOrYdFdeI90ynV2hpS3EwuCFMu+Zl7RtiOsnEQOdpUBO\nKnm4lK3AdAMvY6dTQrfnbOcjHvKU2lpGJ8Bf+awWPfDsq6fh6mx9T6S/FNyW3evQ\nzaeXYvKpAgMBAAECggEAA8ykLukZDwbPnIjOsPGAhN2/X+LIESgXhaKoqQO+KogJ\nYhbMWOlGzEC5kJiTgJFL4jELAT6kbVJ1ZXrbO9fKiqV0ZcMUPOhl2b3oQ1lbmgxd\nmZiOjZada3u1b0xNDtRvrl8LnlOw1ugNgOW3ktBu3OBfKgS3wziR3lkkysANEPG2\nuqFnc675JdH9bh7HSRxIMSW+eHgfEa7uXWZ3vOZqnNkxuzN4yHF/Fl7bdg3gInJ7\nwTvRDH5OkR1P9dVXM2f6Ep0IyAJ6zSqol57Gx+3rPlGrTWRUT7PyxspkWgjzGjjb\nYw7tnplBJDTZ+Q324HWeAfwZjbeH98V4lvt1G2KJfwKBgQDKdQKqpj4Mv7S9gocO\n9CknFXyw9k5np3PF6e2s/Wh9Q0t88D4oSRggUN+YR7U83YYxWNSA8Mt89p/6F15C\nAn6swDe8SVS2z2miDdgp2TQFqUWuJn6wHVdc8aXdphWRh5t3fVxtSpXCe5dvrB6J\nKdGs54f2Or1TibHX3Zj8TrXpJwKBgQDHM1wSXaR2LTWKhg/BLHvnuWY1N31Y5J6y\nGqIzYwk5sobygdWfOMf/vbhfMcYIATKsIIVoQWW7VurqjeOC2n2TuDOMQE/ejSwt\nTzgAlOpeTryxeFyjYbU0tB3T8HUO4dU0N5vqFnamNSRyulD96IzqIm+6VTIw38m2\nUovcZ2OHrwKBgBTSO9f5COCexqPGzMUI70KJvy0j56RZYFq2WC82UIyxYw4SVxIl\nkkmgh55NoaIE1kw06oXoPcU4R/Oce6EmSIjTq+e9Uu0KH77+1YBYSjVa10O1ycmq\n+tUgNQK6lfVFkQOU7PCAfy5lL4nYlbtdhabWmPEF0XrJ6nRc4eLw5Vx5AoGAV7n4\nrGXtDdZvI+hSe+JZVv3BU2Jyo3lbolg0YqkU4QIMiDRBnfNlsO0ei13iNphAdqmD\n1xwl71Eh99YxAemzMCEJIpUYF4zYjcO7iBYM+Sd31jiJo7JeGS3RjQryonE2cd6j\nnX3zFtOEj7oZ/RgzJtGvnsHybq+/p7nGunQV0yUCgYAEmr+nEzcCzb/1qgfWkRYm\nxG/geX2e+c1+0DWssrvdemoqWfLBcnmXx5ztNDl6pTDqHF5yfCyaOu362nyyDJIE\n8Cz2OAUgM7tBGQTPDoax4GyZgdRSVm/VNfecahq72TztaBddmsIDZfVfwypCxwI9\n6axCXFr84Yioqe7Jlm0AnA==\n-----END PRIVATE KEY-----\n',
+  }),
+});
 const db = getFirestore(app);
 
 // ---------------------------------------------------------------------------
@@ -24,10 +21,11 @@ const teams = [
     tag: 'MTD',
     captainDiscordId: '100000000000000001',
     roster: [
-      { name: 'Takumi', role: 'Leader', discordId: '100000000000000001' },
-      { name: 'Itsuki', role: 'Member', discordId: '100000000000000002' },
-      { name: 'Kenji', role: 'Member', discordId: '100000000000000003' },
+      { name: 'Takumi', role: 'Leader', discordId: '100000000000000001', car: 'AE86' },
+      { name: 'Itsuki', role: 'Member', discordId: '100000000000000002', car: 'AE86' },
+      { name: 'Kenji', role: 'Member', discordId: '100000000000000003', car: 'S14' },
     ],
+    teamStaff: [{ name: 'Bunta', role: 'Coach' }],
     active: true,
   },
   {
@@ -36,10 +34,11 @@ const teams = [
     tag: 'NKR',
     captainDiscordId: '200000000000000001',
     roster: [
-      { name: 'Nakazato', role: 'Leader', discordId: '200000000000000001' },
-      { name: 'Shingo', role: 'Co-Leader', discordId: '200000000000000002' },
-      { name: 'Sayuki', role: 'Member', discordId: '200000000000000003' },
+      { name: 'Nakazato', role: 'Leader', discordId: '200000000000000001', car: 'BNR32' },
+      { name: 'Shingo', role: 'Co-Leader', discordId: '200000000000000002', car: 'EG6' },
+      { name: 'Sayuki', role: 'Member', discordId: '200000000000000003', car: 'NA6CE' },
     ],
+    teamStaff: [],
     active: true,
   },
   {
@@ -48,9 +47,10 @@ const teams = [
     tag: 'AKG',
     captainDiscordId: '300000000000000001',
     roster: [
-      { name: 'Ryosuke', role: 'Leader', discordId: '300000000000000001' },
-      { name: 'Keisuke', role: 'Co-Leader', discordId: '300000000000000002' },
+      { name: 'Ryosuke', role: 'Leader', discordId: '300000000000000001', car: 'FC3S' },
+      { name: 'Keisuke', role: 'Co-Leader', discordId: '300000000000000002', car: 'FD3S' },
     ],
+    teamStaff: [{ name: 'Fumihiro', role: 'Manager' }],
     active: true,
   },
   {
@@ -59,11 +59,12 @@ const teams = [
     tag: 'PJD',
     captainDiscordId: '400000000000000001',
     roster: [
-      { name: 'Tomoyuki', role: 'Leader', discordId: '400000000000000001' },
-      { name: 'Kai', role: 'Co-Leader', discordId: '400000000000000002' },
-      { name: 'Wataru', role: 'Member', discordId: '400000000000000003' },
-      { name: 'Sakamoto', role: 'Member', discordId: '400000000000000004' },
+      { name: 'Tomoyuki', role: 'Leader', discordId: '400000000000000001', car: 'CE9A' },
+      { name: 'Kai', role: 'Co-Leader', discordId: '400000000000000002', car: 'SW20' },
+      { name: 'Wataru', role: 'Member', discordId: '400000000000000003', car: 'GC8F' },
+      { name: 'Sakamoto', role: 'Member', discordId: '400000000000000004', car: 'DC2' },
     ],
+    teamStaff: [],
     active: true,
   },
   {
@@ -72,9 +73,10 @@ const teams = [
     tag: 'SST',
     captainDiscordId: '500000000000000001',
     roster: [
-      { name: 'Iketani', role: 'Leader', discordId: '500000000000000001' },
-      { name: 'Yuichi', role: 'Co-Leader', discordId: '500000000000000002' },
+      { name: 'Iketani', role: 'Leader', discordId: '500000000000000001', car: 'S14' },
+      { name: 'Yuichi', role: 'Co-Leader', discordId: '500000000000000002', car: 'RPS13' },
     ],
+    teamStaff: [],
     active: true,
   },
   {
@@ -83,10 +85,11 @@ const teams = [
     tag: 'EMP',
     captainDiscordId: '600000000000000001',
     roster: [
-      { name: 'Sudo', role: 'Leader', discordId: '600000000000000001' },
-      { name: 'Kyoichi', role: 'Co-Leader', discordId: '600000000000000002' },
-      { name: 'Seiji', role: 'Member', discordId: '600000000000000003' },
+      { name: 'Sudo', role: 'Leader', discordId: '600000000000000001', car: 'CE9A' },
+      { name: 'Kyoichi', role: 'Co-Leader', discordId: '600000000000000002', car: 'CE9A' },
+      { name: 'Seiji', role: 'Member', discordId: '600000000000000003', car: 'CE9A' },
     ],
+    teamStaff: [],
     active: true,
   },
   {
@@ -95,8 +98,8 @@ const teams = [
     tag: 'IBL',
     captainDiscordId: '700000000000000001',
     roster: [
-      { name: 'Mako', role: 'Leader', discordId: '700000000000000001' },
-      { name: 'Sayuki', role: 'Co-Leader', discordId: '700000000000000002' },
+      { name: 'Mako', role: 'Leader', discordId: '700000000000000001', car: 'NA6CE' },
+      { name: 'Sayuki', role: 'Co-Leader', discordId: '700000000000000002', car: 'NA6CE' },
     ],
     active: true,
   },
@@ -106,9 +109,10 @@ const teams = [
     tag: 'TSJ',
     captainDiscordId: '800000000000000001',
     roster: [
-      { name: 'Go', role: 'Leader', discordId: '800000000000000001' },
-      { name: 'Shinigami', role: 'Member', discordId: '800000000000000002' },
+      { name: 'Go', role: 'Leader', discordId: '800000000000000001', car: 'CE9A' },
+      { name: 'Shinigami', role: 'Member', discordId: '800000000000000002', car: 'AP1' },
     ],
+    teamStaff: [],
     active: true,
   },
   {
@@ -117,9 +121,10 @@ const teams = [
     tag: 'TDS',
     captainDiscordId: '900000000000000001',
     roster: [
-      { name: 'Daiki', role: 'Leader', discordId: '900000000000000001' },
-      { name: 'Smiley', role: 'Member', discordId: '900000000000000002' },
+      { name: 'Daiki', role: 'Leader', discordId: '900000000000000001', car: 'SW20' },
+      { name: 'Smiley', role: 'Member', discordId: '900000000000000002', car: 'CE9A' },
     ],
+    teamStaff: [],
     active: true,
   },
   {
@@ -128,9 +133,10 @@ const teams = [
     tag: 'SBR',
     captainDiscordId: '110000000000000001',
     roster: [
-      { name: 'Hojo', role: 'Leader', discordId: '110000000000000001' },
-      { name: 'Fumihiro', role: 'Member', discordId: '110000000000000002' },
+      { name: 'Hojo', role: 'Leader', discordId: '110000000000000001', car: 'BNR32' },
+      { name: 'Fumihiro', role: 'Member', discordId: '110000000000000002', car: 'FC3S' },
     ],
+    teamStaff: [],
     active: true,
   },
   {
@@ -139,9 +145,10 @@ const teams = [
     tag: 'RNS',
     captainDiscordId: '120000000000000001',
     roster: [
-      { name: 'Amemiya', role: 'Leader', discordId: '120000000000000001' },
-      { name: 'Kosuke', role: 'Member', discordId: '120000000000000002' },
+      { name: 'Amemiya', role: 'Leader', discordId: '120000000000000001', car: 'FD3S' },
+      { name: 'Kosuke', role: 'Member', discordId: '120000000000000002', car: 'FC3S' },
     ],
+    teamStaff: [],
     active: true,
   },
   {
@@ -150,8 +157,9 @@ const teams = [
     tag: 'NWC',
     captainDiscordId: '130000000000000001',
     roster: [
-      { name: 'Rin', role: 'Leader', discordId: '130000000000000001' },
+      { name: 'Rin', role: 'Leader', discordId: '130000000000000001', car: 'JZA80' },
     ],
+    teamStaff: [],
     active: true,
   },
 ];
@@ -355,10 +363,10 @@ const matches = [
     format: 'BO5', status: 'completed', winner: 'mtd',
     score: { teamA: 3, teamB: 1 },
     maps: [
-      { mapName: 'Akina', uphillWinner: 'mtd', downhillWinner: 'mtd', mapWinner: 'mtd', drivers: { teamA: { uphill: 'Takumi', downhill: 'Itsuki' }, teamB: { uphill: 'Nakazato', downhill: 'Shingo' } } },
-      { mapName: 'Akagi', uphillWinner: 'nkr', downhillWinner: 'mtd', tiebreaker: 'mtd', mapWinner: 'mtd', drivers: { teamA: { uphill: 'Kenji', downhill: 'Takumi' }, teamB: { uphill: 'Shingo', downhill: 'Nakazato' } } },
-      { mapName: 'Myogi', uphillWinner: 'nkr', downhillWinner: 'nkr', mapWinner: 'nkr', drivers: { teamA: { uphill: 'Itsuki', downhill: 'Kenji' }, teamB: { uphill: 'Nakazato', downhill: 'Sayuki' } } },
-      { mapName: 'Usui', uphillWinner: 'mtd', downhillWinner: 'mtd', mapWinner: 'mtd', drivers: { teamA: { uphill: 'Takumi', downhill: 'Takumi' }, teamB: { uphill: 'Shingo', downhill: 'Nakazato' } } },
+      { mapName: 'Akina', type: 'home_a', uphillWinner: 'mtd', downhillWinner: 'mtd', mapWinner: 'mtd', drivers: { teamA: { uphill: 'Takumi', downhill: 'Itsuki' }, teamB: { uphill: 'Nakazato', downhill: 'Shingo' } } },
+      { mapName: 'Akagi', type: 'home_b', uphillWinner: 'nkr', downhillWinner: 'mtd', tiebreaker: 'mtd', mapWinner: 'mtd', drivers: { teamA: { uphill: 'Kenji', downhill: 'Takumi' }, teamB: { uphill: 'Shingo', downhill: 'Nakazato' } } },
+      { mapName: 'Myogi', type: 'decider', uphillWinner: 'nkr', downhillWinner: 'nkr', mapWinner: 'nkr', drivers: { teamA: { uphill: 'Itsuki', downhill: 'Kenji' }, teamB: { uphill: 'Nakazato', downhill: 'Sayuki' } } },
+      { mapName: 'Usui', type: 'home_a', uphillWinner: 'mtd', downhillWinner: 'mtd', mapWinner: 'mtd', drivers: { teamA: { uphill: 'Takumi', downhill: 'Takumi' }, teamB: { uphill: 'Shingo', downhill: 'Nakazato' } } },
     ],
     date: ts(1), recordedBy: 'admin',
     notes: 'Takumi clutched on Usui to close it out',
@@ -370,7 +378,7 @@ const matches = [
     format: 'BO5', status: 'completed', winner: 'akg',
     score: { teamA: 3, teamB: 2 },
     maps: [
-      { mapName: 'Akagi', uphillWinner: 'akg', downhillWinner: 'akg', mapWinner: 'akg', drivers: { teamA: { uphill: 'Ryosuke', downhill: 'Keisuke' }, teamB: { uphill: 'Tomoyuki', downhill: 'Kai' } } },
+      { mapName: 'Akagi', type: 'home_a', uphillWinner: 'akg', downhillWinner: 'akg', mapWinner: 'akg', drivers: { teamA: { uphill: 'Ryosuke', downhill: 'Keisuke' }, teamB: { uphill: 'Tomoyuki', downhill: 'Kai' } } },
       { mapName: 'Irohazaka', uphillWinner: 'pjd', downhillWinner: 'pjd', mapWinner: 'pjd', drivers: { teamA: { uphill: 'Keisuke', downhill: 'Ryosuke' }, teamB: { uphill: 'Wataru', downhill: 'Tomoyuki' } } },
       { mapName: 'Happogahara', uphillWinner: 'akg', downhillWinner: 'pjd', tiebreaker: 'pjd', mapWinner: 'pjd', drivers: { teamA: { uphill: 'Ryosuke', downhill: 'Keisuke' }, teamB: { uphill: 'Kai', downhill: 'Sakamoto' } } },
       { mapName: 'Myogi', uphillWinner: 'akg', downhillWinner: 'akg', mapWinner: 'akg', drivers: { teamA: { uphill: 'Keisuke', downhill: 'Ryosuke' }, teamB: { uphill: 'Tomoyuki', downhill: 'Wataru' } } },
@@ -424,7 +432,7 @@ const matches = [
     format: 'BO5', status: 'completed', winner: 'akg',
     score: { teamA: 3, teamB: 1 },
     maps: [
-      { mapName: 'Akagi', uphillWinner: 'akg', downhillWinner: 'akg', mapWinner: 'akg', drivers: { teamA: { uphill: 'Ryosuke', downhill: 'Keisuke' }, teamB: { uphill: 'Nakazato', downhill: 'Shingo' } } },
+      { mapName: 'Akagi', type: 'home_a', uphillWinner: 'akg', downhillWinner: 'akg', mapWinner: 'akg', drivers: { teamA: { uphill: 'Ryosuke', downhill: 'Keisuke' }, teamB: { uphill: 'Nakazato', downhill: 'Shingo' } } },
       { mapName: 'Myogi', uphillWinner: 'nkr', downhillWinner: 'nkr', mapWinner: 'nkr', drivers: { teamA: { uphill: 'Keisuke', downhill: 'Ryosuke' }, teamB: { uphill: 'Shingo', downhill: 'Nakazato' } } },
       { mapName: 'Usui', uphillWinner: 'akg', downhillWinner: 'akg', mapWinner: 'akg', drivers: { teamA: { uphill: 'Ryosuke', downhill: 'Keisuke' }, teamB: { uphill: 'Nakazato', downhill: 'Sayuki' } } },
       { mapName: 'Irohazaka', uphillWinner: 'akg', downhillWinner: 'nkr', tiebreaker: 'akg', mapWinner: 'akg', drivers: { teamA: { uphill: 'Keisuke', downhill: 'Ryosuke' }, teamB: { uphill: 'Shingo', downhill: 'Nakazato' } } },
@@ -463,7 +471,7 @@ const matches = [
     score: { teamA: 3, teamB: 2 },
     maps: [
       { mapName: 'Akina', uphillWinner: 'mtd', downhillWinner: 'akg', tiebreaker: 'mtd', mapWinner: 'mtd', drivers: { teamA: { uphill: 'Takumi', downhill: 'Itsuki' }, teamB: { uphill: 'Keisuke', downhill: 'Ryosuke' } } },
-      { mapName: 'Akagi', uphillWinner: 'akg', downhillWinner: 'akg', mapWinner: 'akg', drivers: { teamA: { uphill: 'Kenji', downhill: 'Takumi' }, teamB: { uphill: 'Ryosuke', downhill: 'Keisuke' } } },
+      { mapName: 'Akagi', type: 'home_a', uphillWinner: 'akg', downhillWinner: 'akg', mapWinner: 'akg', drivers: { teamA: { uphill: 'Kenji', downhill: 'Takumi' }, teamB: { uphill: 'Ryosuke', downhill: 'Keisuke' } } },
       { mapName: 'Irohazaka', uphillWinner: 'mtd', downhillWinner: 'mtd', mapWinner: 'mtd', drivers: { teamA: { uphill: 'Takumi', downhill: 'Kenji' }, teamB: { uphill: 'Keisuke', downhill: 'Ryosuke' } } },
       { mapName: 'Usui', uphillWinner: 'akg', downhillWinner: 'akg', mapWinner: 'akg', drivers: { teamA: { uphill: 'Itsuki', downhill: 'Kenji' }, teamB: { uphill: 'Ryosuke', downhill: 'Keisuke' } } },
       { mapName: 'Myogi', uphillWinner: 'mtd', downhillWinner: 'mtd', mapWinner: 'mtd', drivers: { teamA: { uphill: 'Takumi', downhill: 'Takumi' }, teamB: { uphill: 'Keisuke', downhill: 'Ryosuke' } } },
@@ -490,9 +498,9 @@ const matches = [
 // ---------------------------------------------------------------------------
 
 async function clearCollection(name) {
-  const snap = await getDocs(collection(db, name));
+  const snap = await db.collection(name).get();
   for (const d of snap.docs) {
-    await deleteDoc(doc(db, name, d.id));
+    await d.ref.delete();
   }
   console.log(`  Cleared ${snap.size} docs from ${name}`);
 }
@@ -513,24 +521,29 @@ async function seed() {
   for (const team of teams) {
     const { id, ...data } = team;
     data.createdAt = Timestamp.now();
-    await setDoc(doc(db, 'teams', id), data);
+    await db.doc(`teams/${id}`).set(data);
     console.log(`  + teams/${id}`);
   }
 
   console.log('Seeding standings...');
   for (const standing of standings) {
     const { id, ...data } = standing;
-    await setDoc(doc(db, 'standings', id), data);
+    const team = teams.find(t => t.id === id);
+    data.teamStaff = team?.teamStaff || [];
+    await db.doc(`standings/${id}`).set(data);
     console.log(`  + standings/${id}`);
   }
 
   console.log('Seeding matches...');
+  const typePattern = ['home_a', 'home_b', 'decider', 'home_a', 'home_b'];
   for (const match of matches) {
     const { id, ...data } = match;
-    // Add team tags
     data.teamATag = tagMap[data.teamA] || '';
     data.teamBTag = tagMap[data.teamB] || '';
-    await setDoc(doc(db, 'matches', id), data);
+    if (data.maps) {
+      data.maps = data.maps.map((m, i) => ({ type: typePattern[i] || 'decider', ...m }));
+    }
+    await db.doc(`matches/${id}`).set(data);
     console.log(`  + matches/${id}`);
   }
 

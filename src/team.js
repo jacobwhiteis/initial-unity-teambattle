@@ -59,22 +59,27 @@ async function loadTeam() {
     : 'No matches played';
 
   // Get matches for this team (only completed)
-  const matchesA = await getDocs(query(
-    collection(db, 'matches'),
-    where('teamA', '==', team.id),
-    orderBy('date', 'desc')
-  ));
-  const matchesB = await getDocs(query(
-    collection(db, 'matches'),
-    where('teamB', '==', team.id),
-    orderBy('date', 'desc')
-  ));
+  let allMatches = [];
+  try {
+    const matchesA = await getDocs(query(
+      collection(db, 'matches'),
+      where('teamA', '==', team.id),
+      orderBy('date', 'desc')
+    ));
+    const matchesB = await getDocs(query(
+      collection(db, 'matches'),
+      where('teamB', '==', team.id),
+      orderBy('date', 'desc')
+    ));
 
-  const allMatches = [
-    ...matchesA.docs.map(d => ({ id: d.id, ...d.data() })),
-    ...matchesB.docs.map(d => ({ id: d.id, ...d.data() }))
-  ].filter(m => m.status === 'completed')
-   .sort((a, b) => (b.date?.seconds || 0) - (a.date?.seconds || 0));
+    allMatches = [
+      ...matchesA.docs.map(d => ({ id: d.id, ...d.data() })),
+      ...matchesB.docs.map(d => ({ id: d.id, ...d.data() }))
+    ].filter(m => m.status === 'completed')
+     .sort((a, b) => (b.date?.seconds || 0) - (a.date?.seconds || 0));
+  } catch (e) {
+    console.error('Failed to load matches:', e);
+  }
 
   // Render
   let html = '';
@@ -91,13 +96,13 @@ async function loadTeam() {
     html += '</div>';
   }
 
-  // Team staff (non-drivers)
+  // Coaches
   const teamStaff = team.teamStaff || [];
   if (teamStaff.length > 0) {
-    html += '<h3 class="section-header">Team Staff</h3>';
+    html += '<h3 class="section-header">Coaches</h3>';
     html += '<div class="roster-grid">';
     teamStaff.forEach(s => {
-      html += `<span class="roster-player">${s.name} · ${s.role}</span>`;
+      html += `<span class="roster-player">${s.name}</span>`;
     });
     html += '</div>';
   }

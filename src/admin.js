@@ -30,7 +30,6 @@ const dangerNav     = document.getElementById('dangerNav');
 const saveTeamBtn   = document.getElementById('saveTeamBtn');
 const clearTeamBtn  = document.getElementById('clearTeamBtn');
 const logMatchBtn   = document.getElementById('logMatchBtn');
-const seasonResetBtn = document.getElementById('seasonResetBtn');
 const delTeamBtn    = document.getElementById('delTeamBtn');
 const delMatchBtn   = document.getElementById('delMatchBtn');
 const toastEl       = document.getElementById('toast');
@@ -152,12 +151,14 @@ function initDashboard() {
   onSnapshot(query(collection(db, 'teams'), orderBy('name')), snap => {
     teamsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     refreshTeamList();
+    refreshDriverList();
     refreshDropdowns();
   });
 
   onSnapshot(query(collection(db, 'standings'), orderBy('rank', 'asc')), snap => {
     standingsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     refreshTeamList();
+    refreshDriverList();
     refreshDropdowns();
     onMatchSelectionChange();
   });
@@ -187,7 +188,6 @@ function initDashboard() {
   loadWebhookConfig();
 
   // Danger zone
-  seasonResetBtn.addEventListener('click', seasonReset);
   delTeamBtn.addEventListener('click', deleteTeamAction);
   delMatchBtn.addEventListener('click', deleteMatchAction);
 
@@ -246,6 +246,36 @@ function refreshBattleDropdowns() {
   btb.innerHTML = baseOpt + buildOpts(selA);
   bta.value = selA;
   btb.value = selB;
+}
+
+// ---------------------------------------------------------------------------
+// All Drivers List
+// ---------------------------------------------------------------------------
+
+function refreshDriverList() {
+  const el = document.getElementById('all-drivers-list');
+  if (!el) return;
+  const allDrivers = [];
+  teamsCache.forEach(t => {
+    (t.roster || []).forEach(d => {
+      allDrivers.push({ ...d, teamName: t.name, teamTag: t.tag, teamId: t.id });
+    });
+  });
+  if (!allDrivers.length) {
+    el.innerHTML = '<p class="empty-state">No drivers registered yet.</p>';
+    return;
+  }
+  allDrivers.sort((a, b) => a.name.localeCompare(b.name));
+  el.innerHTML = allDrivers.map(d => {
+    const roleTag = d.role === 'Leader' ? ' ★' : d.role === 'Co-Leader' ? ' ☆' : '';
+    return `<div class="mod-list-item">
+      <span class="ml-name">${d.name}${roleTag}</span>
+      <span class="ml-info">${d.car || '—'}</span>
+      <span class="tag-badge" style="font-size:.65rem;">${d.teamTag}</span>
+      <span style="color:var(--text-mute);font-size:.75rem;">${d.teamName}</span>
+      ${d.discordId ? `<span style="color:var(--text-mute);font-size:.7rem;margin-left:auto;">${d.discordId}</span>` : ''}
+    </div>`;
+  }).join('');
 }
 
 // ---------------------------------------------------------------------------
@@ -346,25 +376,16 @@ function openTeamEditor(teamId) {
       </div>`).join('') : '<p class="empty-state">No drivers — use <code>/add-team-driver</code> in Discord.</p>'}
     </div>
 
-    <h4 style="margin-top:1.5rem;margin-bottom:.5rem;">Team Staff (${teamStaff.length}/${MAX_TEAM_STAFF})</h4>
-    <p style="color:var(--text-mute);font-size:.82rem;margin-bottom:1rem;">Non-playing team members (manager, coach).</p>
+    <h4 style="margin-top:1.5rem;margin-bottom:.5rem;">Coaches (${teamStaff.length}/${MAX_TEAM_STAFF})</h4>
     <div class="mod-list" id="dm-staff-list">
       ${teamStaff.map((s, i) => `<div class="mod-list-item" style="gap:.5rem;">
         <input type="text" class="ts-edit-name" data-idx="${i}" value="${(s.name || '').replace(/"/g, '&quot;')}" style="flex:1;padding:.3rem .5rem;font-size:.85rem;">
-        <select class="ts-edit-role" data-idx="${i}" style="width:120px;padding:.3rem .5rem;font-size:.85rem;">
-          <option value="Manager"${s.role === 'Manager' ? ' selected' : ''}>Manager</option>
-          <option value="Coach"${s.role === 'Coach' ? ' selected' : ''}>Coach</option>
-        </select>
         <button class="btn btn-primary btn-sm ts-save-btn" data-idx="${i}" data-team-id="${teamId}">Save</button>
         <button class="btn btn-danger btn-sm ts-remove-btn" data-team-id="${teamId}" data-staff-idx="${i}">Remove</button>
       </div>`).join('')}
       ${teamStaff.length < MAX_TEAM_STAFF ? `
       <div style="display:flex;gap:.5rem;margin-top:.5rem;align-items:end;">
-        <input type="text" id="ts-new-name" placeholder="Name" style="flex:1;padding:.3rem .5rem;font-size:.85rem;">
-        <select id="ts-new-role" style="width:120px;padding:.3rem .5rem;font-size:.85rem;">
-          <option value="Manager">Manager</option>
-          <option value="Coach">Coach</option>
-        </select>
+        <input type="text" id="ts-new-name" placeholder="Coach name" style="flex:1;padding:.3rem .5rem;font-size:.85rem;">
         <button class="btn btn-primary btn-sm" id="ts-add-btn" data-team-id="${teamId}">Add</button>
       </div>` : ''}
     </div>
@@ -425,12 +446,11 @@ function wireTeamEditorEvents(el, teamId) {
     btn.addEventListener('click', async () => {
       const idx = parseInt(btn.dataset.idx);
       const newName = el.querySelector(`.ts-edit-name[data-idx="${idx}"]`).value.trim();
-      const newRole = el.querySelector(`.ts-edit-role[data-idx="${idx}"]`).value;
       if (!newName) { toast('Name cannot be empty', true); return; }
       const t = teamsCache.find(x => x.id === teamId);
       if (!t) return;
       const newStaff = [...(t.teamStaff || [])];
-      newStaff[idx] = { name: newName, role: newRole };
+      newStaff[idx] = { name: newName, role: 'Coach' };
       try {
         const batch = writeBatch(db);
         batch.update(doc(db, 'teams', teamId), { teamStaff: newStaff });
@@ -467,13 +487,12 @@ function wireTeamEditorEvents(el, teamId) {
   // --- Team staff add button ---
   el.querySelector('#ts-add-btn')?.addEventListener('click', async () => {
     const name = document.getElementById('ts-new-name').value.trim();
-    const role = document.getElementById('ts-new-role').value;
     if (!name) { toast('Enter a name', true); return; }
     const t = teamsCache.find(x => x.id === teamId);
     if (!t) return;
     const staff = t.teamStaff || [];
-    if (staff.length >= MAX_TEAM_STAFF) { toast(`Maximum ${MAX_TEAM_STAFF} team staff`, true); return; }
-    const newStaff = [...staff, { name, role }];
+    if (staff.length >= MAX_TEAM_STAFF) { toast(`Maximum ${MAX_TEAM_STAFF} coaches`, true); return; }
+    const newStaff = [...staff, { name, role: 'Coach' }];
     try {
       const batch = writeBatch(db);
       batch.update(doc(db, 'teams', teamId), { teamStaff: newStaff });
@@ -676,31 +695,6 @@ async function logMatch() {
 // ---------------------------------------------------------------------------
 // Danger Zone
 // ---------------------------------------------------------------------------
-
-// --- Season Reset ---
-function seasonReset() {
-  if (staffRole !== 'admin') { toast('Admin access required', true); return; }
-  const btn = seasonResetBtn;
-  if (btn.dataset.confirm !== 'season') {
-    btn.textContent = 'Click again to confirm reset';
-    btn.dataset.confirm = 'season';
-    setTimeout(() => { btn.textContent = 'Reset Season'; delete btn.dataset.confirm; }, 4000);
-    return;
-  }
-  delete btn.dataset.confirm;
-  btn.textContent = 'Reset Season';
-
-  const batch = writeBatch(db);
-  standingsCache.forEach(s => {
-    batch.update(doc(db, 'standings', s.id), {
-      crp: 0, wins: 0, losses: 0, mapWins: 0, mapLosses: 0,
-      winRate: 0, streak: 0, consecutive_wins: 0, match_history: []
-    });
-  });
-  batch.commit()
-    .then(() => toast('Season reset complete — all CRP, W/L and history cleared'))
-    .catch(e => toast('Reset failed: ' + e.message, true));
-}
 
 // --- Delete Team ---
 function deleteTeamAction() {

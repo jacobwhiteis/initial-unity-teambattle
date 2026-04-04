@@ -73,6 +73,7 @@
                 <aside class="mod-sidebar">
                     <div class="mod-sidebar-hd">Sections</div>
                     <button class="mod-nav active" data-section="sec-teams">Teams</button>
+                    <button class="mod-nav" data-section="sec-drivers">Drivers</button>
                     <button class="mod-nav" data-section="sec-matches">Log Match</button>
                     <button class="mod-nav" data-section="sec-battles">Battles</button>
                     <button class="mod-nav" data-section="sec-invites" id="invitesNav" style="display:none">Invites</button>
@@ -110,16 +111,13 @@
                                     </label>
                                 </div>
                             </div>
-                            <p style="color:var(--text-mute);font-size:.82rem;margin-top:.5rem;">Drivers are managed via Discord bot — use <code>/add-team-driver</code> after creating the team.</p>
                             <input type="hidden" id="t-editing">
                             <div class="form-actions">
                                 <button class="btn btn-primary" id="saveTeamBtn">Save Team</button>
                                 <button class="btn btn-ghost" id="clearTeamBtn">Clear</button>
                             </div>
+                            <div id="driver-manager" style="display:none;"></div>
                         </div>
-
-                        <!-- Driver Manager (shown when managing a specific team's drivers) -->
-                        <div class="card" id="driver-manager" style="display:none;"></div>
 
                         <div class="card">
                             <h4>All Teams</h4>
@@ -128,6 +126,17 @@
                             </div>
                         </div>
 
+                    </div>
+
+                    <!-- ===== DRIVERS ===== -->
+                    <div class="mod-section" id="sec-drivers">
+                        <div class="card">
+                            <h4>All Drivers</h4>
+                            <p style="color:var(--text-mute);font-size:.82rem;margin-bottom:1rem;">All registered drivers across all teams. New drivers are added via <code>/add-team-driver</code> in Discord.</p>
+                            <div class="mod-list" id="all-drivers-list">
+                                <p class="empty-state">Loading...</p>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- ===== MATCHES ===== -->
@@ -290,14 +299,6 @@
                             </div>
                             <div class="form-actions">
                                 <button class="btn btn-primary" id="saveWebhookBtn">Save Webhook</button>
-                            </div>
-                        </div>
-
-                        <div class="card">
-                            <h4>Season Reset</h4>
-                            <div class="info-box">Resets <strong>all teams</strong>: clears match history, sets CRP to 0, resets W/L to 0/0 and streaks to 0. Positions and team/driver data are kept.</div>
-                            <div class="form-actions">
-                                <button class="btn btn-danger" id="seasonResetBtn">Reset Season</button>
                             </div>
                         </div>
 
