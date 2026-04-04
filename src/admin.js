@@ -1022,13 +1022,13 @@ async function redeemInvite(user) {
     return;
   }
   const invite = inviteDoc.data();
-  if (invite.used) {
+  if (invite.used && !invite.reusable) {
     errEl.textContent = 'This invite code has already been used';
     errEl.style.display = 'block';
     return;
   }
 
-  // Create staff doc and mark invite as used
+  // Create staff doc and mark invite as used (skip marking reusable invites)
   const discordId = user.providerData?.find(p => p.providerId === 'oidc.discord')?.uid || '';
   const batch = writeBatch(db);
   batch.set(doc(db, 'staff', user.uid), {
@@ -1039,7 +1039,9 @@ async function redeemInvite(user) {
     addedAt: Timestamp.now(),
     addedBy: 'invite:' + code
   });
-  batch.update(inviteRef, { used: true, usedBy: user.uid, usedAt: Timestamp.now() });
+  if (!invite.reusable) {
+    batch.update(inviteRef, { used: true, usedBy: user.uid, usedAt: Timestamp.now() });
+  }
 
   try {
     await batch.commit();
