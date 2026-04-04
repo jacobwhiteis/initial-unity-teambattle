@@ -1,5 +1,5 @@
 import './nav.js';
-import { db, collection, query, orderBy, limit, where, onSnapshot } from './firebase.js';
+import { db, collection, query, orderBy, limit, onSnapshot } from './firebase.js';
 import { getTier, getRules } from './crp.js';
 
 // ---------------------------------------------------------------------------
@@ -205,84 +205,72 @@ onSnapshot(standingsQuery, (snapshot) => {
 });
 
 // ---------------------------------------------------------------------------
-// Live Battles
+// Live Battles + Recent Matches
 // ---------------------------------------------------------------------------
 
 const liveBattlesSection = document.getElementById('liveBattlesSection');
 const liveBattlesContainer = document.getElementById('liveBattlesContainer');
 
-const liveQuery = query(
+const matchesQuery = query(
   collection(db, 'matches'),
-  where('status', 'in', ['banpick', 'in_progress']),
-  orderBy('createdAt', 'desc')
+  orderBy('date', 'desc'),
+  limit(20)
 );
 
-onSnapshot(liveQuery, (snapshot) => {
-  const matches = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+onSnapshot(matchesQuery, (snapshot) => {
+  const allMatches = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const live = allMatches.filter(m => m.status === 'banpick' || m.status === 'in_progress');
+  const completed = allMatches.filter(m => m.status === 'completed').slice(0, 10);
 
-  if (matches.length === 0) {
+  // --- Live Battles ---
+  if (live.length === 0) {
     liveBattlesSection.style.display = 'none';
-    return;
+  } else {
+    liveBattlesSection.style.display = '';
+    liveBattlesContainer.innerHTML = '';
+
+    live.forEach(match => {
+      const card = document.createElement('div');
+      card.className = 'match-card live-match-card';
+
+      const scoreA = match.liveScore?.teamA ?? match.score?.teamA ?? 0;
+      const scoreB = match.liveScore?.teamB ?? match.score?.teamB ?? 0;
+      const tagA = match.teamATag ? ` [${match.teamATag}]` : '';
+      const tagB = match.teamBTag ? ` [${match.teamBTag}]` : '';
+
+      const isLive = match.status === 'in_progress';
+      const statusPill = isLive
+        ? '<span class="status-pill status-live"><span class="pulse-dot"></span>LIVE</span>'
+        : '<span class="status-pill status-banpick">BAN/PICK</span>';
+
+      card.innerHTML = `
+        <div class="match-teams">
+          <span class="match-team">${match.teamAName}${tagA}</span>
+          <span class="match-score">${scoreA} \u2014 ${scoreB}</span>
+          <span class="match-team">${match.teamBName}${tagB}</span>
+        </div>
+        <div class="match-meta">
+          ${statusPill}
+        </div>
+      `;
+
+      card.addEventListener('click', () => {
+        window.location.href = `/battle?id=${match.id}`;
+      });
+
+      liveBattlesContainer.appendChild(card);
+    });
   }
 
-  liveBattlesSection.style.display = '';
-  liveBattlesContainer.innerHTML = '';
-
-  matches.forEach(match => {
-    const card = document.createElement('div');
-    card.className = 'match-card live-match-card';
-
-    const scoreA = match.liveScore?.teamA ?? match.score?.teamA ?? 0;
-    const scoreB = match.liveScore?.teamB ?? match.score?.teamB ?? 0;
-    const tagA = match.teamATag ? ` [${match.teamATag}]` : '';
-    const tagB = match.teamBTag ? ` [${match.teamBTag}]` : '';
-
-    const isLive = match.status === 'in_progress';
-    const statusPill = isLive
-      ? '<span class="status-pill status-live"><span class="pulse-dot"></span>LIVE</span>'
-      : '<span class="status-pill status-banpick">BAN/PICK</span>';
-
-    card.innerHTML = `
-      <div class="match-teams">
-        <span class="match-team">${match.teamAName}${tagA}</span>
-        <span class="match-score">${scoreA} \u2014 ${scoreB}</span>
-        <span class="match-team">${match.teamBName}${tagB}</span>
-      </div>
-      <div class="match-meta">
-        ${statusPill}
-      </div>
-    `;
-
-    card.addEventListener('click', () => {
-      window.location.href = `/battle?id=${match.id}`;
-    });
-
-    liveBattlesContainer.appendChild(card);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Recent Matches
-// ---------------------------------------------------------------------------
-
-const recentQuery = query(
-  collection(db, 'matches'),
-  where('status', '==', 'completed'),
-  orderBy('date', 'desc'),
-  limit(10)
-);
-
-onSnapshot(recentQuery, (snapshot) => {
-  const matches = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-  if (matches.length === 0) {
+  // --- Recent Matches ---
+  if (completed.length === 0) {
     matchesContainer.innerHTML = '<div class="empty-state">No matches recorded yet</div>';
     return;
   }
 
   matchesContainer.innerHTML = '';
 
-  matches.forEach(match => {
+  completed.forEach(match => {
     const card = document.createElement('div');
     card.className = 'match-card';
 
