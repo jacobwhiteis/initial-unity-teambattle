@@ -674,7 +674,7 @@ function onMatchSelectionChange() {
 
   let rows = `<div class="crp-row"><span>${winTeam?.name} wins (${loseTeam?.name}'s win value)</span><span class="cv">+${c.winnerBase}</span></div>`;
   if (c.winnerHome) rows += `<div class="crp-row"><span>Home map bonus (${loseTeam?.name}'s home value)</span><span class="cv">+${c.winnerHome}</span></div>`;
-  if (c.streakBonus) rows += `<div class="crp-row"><span>Streak bonus x${c.newStreak} (${loseTeam?.name}'s streak value)</span><span class="cv">+${c.streakBonus}</span></div>`;
+  if (c.streakBonus) rows += `<div class="crp-row"><span>Streak bonus x${c.newStreak} (${winTeam?.name}'s streak value)</span><span class="cv">+${c.streakBonus}</span></div>`;
   rows += `<div class="crp-div"></div><div class="crp-row"><span><b>→ ${winTeam?.name} total</b></span><span class="cv">+${c.winnerTotal}</span></div><div class="crp-div"></div>`;
   rows += `<div class="crp-row"><span>${loseTeam?.name} loses (${winTeam?.name}'s loss value)</span><span class="cv">+${c.loserBase}</span></div>`;
   if (c.loserHome) rows += `<div class="crp-row"><span>Home map bonus (${winTeam?.name}'s home value)</span><span class="cv">+${c.loserHome}</span></div>`;

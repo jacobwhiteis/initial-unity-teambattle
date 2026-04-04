@@ -77,8 +77,8 @@ export function getRules(pos) {
  * Home bonus: each team uses the opponent's "home" value if they held home
  * advantage during the match.
  *
- * Streak bonus: every 4th consecutive win, the winner receives the loser's
- * "streak" value.
+ * Streak bonus: every 4th consecutive win, the winner receives their own
+ * position's "streak" value (not the opponent's).
  *
  * @param {{ position: number|null, consecutive_wins: number }} winner
  * @param {{ position: number|null, consecutive_wins: number }} loser
@@ -117,7 +117,7 @@ export function calcCRP(winner, loser, homeFor) {
 
   // Streak bonus -- every 4th consecutive win for the winner
   const newStreak = (winner.consecutive_wins || 0) + 1;
-  const streakBonus = newStreak % 4 === 0 ? loserRules.streak : 0;
+  const streakBonus = newStreak % 4 === 0 ? winnerRules.streak : 0;
 
   // Totals
   const winnerTotal = winnerBase + winnerHome + streakBonus;
