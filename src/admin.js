@@ -82,24 +82,32 @@ onAuthStateChanged(auth, async (user) => {
     currentUser = user;
     // Check staff collection
     console.log('Firebase UID:', user.uid, '| Display name:', user.displayName);
-    const staffDoc = await getDoc(doc(db, 'staff', user.uid));
-    if (staffDoc.exists()) {
-      staffRole = staffDoc.data().role || 'moderator';
-      staffUser.textContent = staffDoc.data().discordUsername || user.displayName || 'Staff';
-      loginView.style.display = 'none';
-      dashView.style.display = 'block';
-      // Show admin-only sections
-      if (staffRole === 'admin') {
-        dangerNav.style.display = '';
-        document.getElementById('invitesNav').style.display = '';
+    try {
+      const staffDoc = await getDoc(doc(db, 'staff', user.uid));
+      if (staffDoc.exists()) {
+        staffRole = staffDoc.data().role || 'moderator';
+        staffUser.textContent = staffDoc.data().discordUsername || user.displayName || 'Staff';
+        loginView.style.display = 'none';
+        dashView.style.display = 'block';
+        // Show admin-only sections
+        if (staffRole === 'admin') {
+          dangerNav.style.display = '';
+          document.getElementById('invitesNav').style.display = '';
+        }
+        initDashboard();
+      } else {
+        // Not authorized — show invite code form
+        authLoading.style.display = 'none';
+        authError.style.display = 'block';
+        loginBtn.disabled = false;
+        document.getElementById('redeemInviteBtn').onclick = () => redeemInvite(user);
       }
-      initDashboard();
-    } else {
-      // Not authorized — show invite code form
+    } catch (e) {
+      // Permission denied reading staff collection — user is not staff
+      console.log('Staff check failed (likely not staff):', e.code || e.message);
       authLoading.style.display = 'none';
       authError.style.display = 'block';
       loginBtn.disabled = false;
-      // Wire up invite redemption
       document.getElementById('redeemInviteBtn').onclick = () => redeemInvite(user);
     }
   } else {
