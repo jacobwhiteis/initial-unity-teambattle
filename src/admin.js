@@ -791,17 +791,24 @@ function deleteMatchAction() {
 // ---------------------------------------------------------------------------
 
 async function createBattle() {
-  const taId = document.getElementById('b-ta').value;
-  const tbId = document.getElementById('b-tb').value;
+  let taId = document.getElementById('b-ta').value;
+  let tbId = document.getElementById('b-tb').value;
   const threadId = document.getElementById('b-thread').value.trim();
 
   if (!taId || !tbId) { toast('Select both teams', true); return; }
   if (taId === tbId) { toast('Teams must be different', true); return; }
 
-  const tA = teamsCache.find(t => t.id === taId);
-  const tB = teamsCache.find(t => t.id === tbId);
+  // Auto-swap so higher-ranked team (lower position number) is always Team A (first pick/ban)
   const sA = standingsCache.find(s => s.id === taId);
   const sB = standingsCache.find(s => s.id === tbId);
+  const posA = sA?.position ?? 999;
+  const posB = sB?.position ?? 999;
+  if (posB < posA) {
+    [taId, tbId] = [tbId, taId];
+  }
+
+  const tA = teamsCache.find(t => t.id === taId);
+  const tB = teamsCache.find(t => t.id === tbId);
 
   // Live battles are always BO3 (banpick produces 3 maps)
   const format = 'BO3';
@@ -882,11 +889,18 @@ async function loadBattles() {
   if (recent.length) {
     recentEl.innerHTML = recent.map(b => {
       const dateStr = b.date?.toDate ? b.date.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
-      return `<div class="mod-list-item">
-        <span class="ml-name">${b.teamAName} [${b.teamATag || ''}] vs ${b.teamBName} [${b.teamBTag || ''}]</span>
-        <span class="ml-info">${b.score?.teamA || 0} — ${b.score?.teamB || 0}</span>
+      const maps = (b.mapResults?.length ? b.mapResults : b.maps) || [];
+      const mapNames = maps.map(m => m.mapName).filter(Boolean).join(', ');
+      const isTeamAWinner = b.winner === b.teamA;
+      return `<div class="mod-list-item" style="flex-wrap:wrap;gap:.25rem;">
+        <span class="ml-name" style="flex:1;min-width:200px;">
+          <span style="color:${isTeamAWinner ? 'var(--win)' : ''}">${b.teamAName} [${b.teamATag || ''}]</span>
+          <span style="margin:0 .25rem;">${b.score?.teamA || 0} — ${b.score?.teamB || 0}</span>
+          <span style="color:${!isTeamAWinner ? 'var(--win)' : ''}">${b.teamBName} [${b.teamBTag || ''}]</span>
+        </span>
+        ${mapNames ? `<span style="color:var(--text-mute);font-size:.75rem;">${mapNames}</span>` : ''}
         <span class="ml-info">${dateStr}</span>
-        <a href="/battle?id=${b.id}" class="btn btn-ghost btn-sm" target="_blank">View</a>
+        <a href="/match?id=${b.id}" class="btn btn-ghost btn-sm" target="_blank">View</a>
       </div>`;
     }).join('');
   } else {
