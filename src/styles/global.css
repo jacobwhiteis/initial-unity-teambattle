@@ -640,12 +640,12 @@ thead tr {
 
 thead th {
     font-family: var(--font-condensed);
-    font-size: .75rem;
+    font-size: .85rem;
     font-weight: 700;
     letter-spacing: .13em;
     text-transform: uppercase;
     color: var(--text-dim);
-    padding: .8rem 1.1rem;
+    padding: .9rem 1.1rem;
     text-align: left;
 }
 
@@ -663,8 +663,8 @@ tbody tr.data-row:hover {
 }
 
 tbody td {
-    padding: .9rem 1.1rem;
-    font-size: .93rem;
+    padding: 1rem 1.1rem;
+    font-size: 1.05rem;
 }
 
 td.r { text-align: right; }
@@ -678,12 +678,12 @@ td.c { text-align: center; }
 
 .standings-table thead th {
     font-family: var(--font-condensed);
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .13em;
     color: var(--text-dim);
-    padding: .8rem 1.1rem;
+    padding: .9rem 1.1rem;
     border-bottom: 2px solid var(--border);
     text-align: left;
 }
@@ -707,8 +707,8 @@ td.c { text-align: center; }
 }
 
 .standings-table tbody td {
-    padding: .9rem 1.1rem;
-    font-size: .93rem;
+    padding: 1rem 1.1rem;
+    font-size: 1.05rem;
 }
 
 .standings-table tbody td.center {
@@ -720,7 +720,7 @@ td.c { text-align: center; }
    ============================================ */
 .rank-cell {
     font-family: var(--font-heading);
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     color: var(--text-mute);
     width: 52px;
 }
@@ -745,10 +745,10 @@ td.c { text-align: center; }
 .tier-badge {
     display: inline-block;
     font-family: var(--font-condensed);
-    font-size: .68rem;
+    font-size: .8rem;
     font-weight: 700;
     letter-spacing: .06em;
-    padding: .1rem .38rem;
+    padding: .15rem .45rem;
     border-radius: 3px;
     margin-right: .4rem;
     vertical-align: middle;
@@ -769,10 +769,10 @@ td.c { text-align: center; }
     border: 1px solid var(--gold-dim);
     color: var(--accent);
     font-family: var(--font-condensed);
-    font-size: .7rem;
+    font-size: .82rem;
     font-weight: 700;
     letter-spacing: .07em;
-    padding: .08rem .35rem;
+    padding: .12rem .4rem;
     border-radius: 3px;
     margin-right: .4rem;
 }
@@ -792,12 +792,12 @@ td.c { text-align: center; }
 
 .team-name {
     font-weight: 700;
-    font-size: .97rem;
+    font-size: 1.1rem;
 }
 
 .team-sub {
     color: var(--text-dim);
-    font-size: .78rem;
+    font-size: .88rem;
     margin-top: .1rem;
 }
 
@@ -806,7 +806,7 @@ td.c { text-align: center; }
    ============================================ */
 .crp-val {
     font-family: var(--font-heading);
-    font-size: 1.15rem;
+    font-size: 1.35rem;
     color: var(--accent);
     letter-spacing: .04em;
 }
@@ -814,7 +814,7 @@ td.c { text-align: center; }
 .wl-cell {
     font-family: var(--font-condensed);
     font-weight: 600;
-    font-size: .93rem;
+    font-size: 1.05rem;
 }
 
 .wl-cell .w { color: var(--win); }
@@ -829,7 +829,7 @@ td.c { text-align: center; }
     align-items: center;
     gap: .25rem;
     font-family: var(--font-condensed);
-    font-size: .85rem;
+    font-size: 1rem;
     font-weight: 700;
     color: var(--win);
 }
