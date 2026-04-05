@@ -1003,7 +1003,11 @@ tr.expand-row td {
     font-family: var(--font-heading);
     font-size: 1.8rem;
     letter-spacing: 2px;
+    flex: 1;
 }
+
+.match-detail-team:first-child { text-align: right; }
+.match-detail-team:last-child { text-align: left; }
 
 .match-detail-team.winner {
     color: var(--win);
