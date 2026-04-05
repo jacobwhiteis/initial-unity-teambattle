@@ -1,13 +1,23 @@
-import { initializeApp, cert } from 'firebase-admin/app';
+import { initializeApp, cert, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 
-const app = initializeApp({
-  credential: cert({
-    projectId: 'iur-teambattle',
-    clientEmail: 'teambattle-bot@iur-teambattle.iam.gserviceaccount.com',
-    privateKey: '-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCdiZMywndwZvB9\nDk7pcxCMjhiFqOq3Yke086UfGCGPF7OlpvoQ660MA5vFHfLRGmR/gVyfatA4btOU\nhTOzEfJ0B4t08r/6Ra5asv+TBcd6L4xzGJyh4Zn9Wsf98FjQ5367dnOhIB1s0U1B\nieDZ+4y3vrjEVW7OXIJ4Gyu1G9wOIuS+/GUE+a0osMYsV7lwxERCDXcsVAP33FSA\nUH7NRelAAjWmfM46Ro+0dOrYdFdeI90ynV2hpS3EwuCFMu+Zl7RtiOsnEQOdpUBO\nKnm4lK3AdAMvY6dTQrfnbOcjHvKU2lpGJ8Bf+awWPfDsq6fh6mx9T6S/FNyW3evQ\nzaeXYvKpAgMBAAECggEAA8ykLukZDwbPnIjOsPGAhN2/X+LIESgXhaKoqQO+KogJ\nYhbMWOlGzEC5kJiTgJFL4jELAT6kbVJ1ZXrbO9fKiqV0ZcMUPOhl2b3oQ1lbmgxd\nmZiOjZada3u1b0xNDtRvrl8LnlOw1ugNgOW3ktBu3OBfKgS3wziR3lkkysANEPG2\nuqFnc675JdH9bh7HSRxIMSW+eHgfEa7uXWZ3vOZqnNkxuzN4yHF/Fl7bdg3gInJ7\nwTvRDH5OkR1P9dVXM2f6Ep0IyAJ6zSqol57Gx+3rPlGrTWRUT7PyxspkWgjzGjjb\nYw7tnplBJDTZ+Q324HWeAfwZjbeH98V4lvt1G2KJfwKBgQDKdQKqpj4Mv7S9gocO\n9CknFXyw9k5np3PF6e2s/Wh9Q0t88D4oSRggUN+YR7U83YYxWNSA8Mt89p/6F15C\nAn6swDe8SVS2z2miDdgp2TQFqUWuJn6wHVdc8aXdphWRh5t3fVxtSpXCe5dvrB6J\nKdGs54f2Or1TibHX3Zj8TrXpJwKBgQDHM1wSXaR2LTWKhg/BLHvnuWY1N31Y5J6y\nGqIzYwk5sobygdWfOMf/vbhfMcYIATKsIIVoQWW7VurqjeOC2n2TuDOMQE/ejSwt\nTzgAlOpeTryxeFyjYbU0tB3T8HUO4dU0N5vqFnamNSRyulD96IzqIm+6VTIw38m2\nUovcZ2OHrwKBgBTSO9f5COCexqPGzMUI70KJvy0j56RZYFq2WC82UIyxYw4SVxIl\nkkmgh55NoaIE1kw06oXoPcU4R/Oce6EmSIjTq+e9Uu0KH77+1YBYSjVa10O1ycmq\n+tUgNQK6lfVFkQOU7PCAfy5lL4nYlbtdhabWmPEF0XrJ6nRc4eLw5Vx5AoGAV7n4\nrGXtDdZvI+hSe+JZVv3BU2Jyo3lbolg0YqkU4QIMiDRBnfNlsO0ei13iNphAdqmD\n1xwl71Eh99YxAemzMCEJIpUYF4zYjcO7iBYM+Sd31jiJo7JeGS3RjQryonE2cd6j\nnX3zFtOEj7oZ/RgzJtGvnsHybq+/p7nGunQV0yUCgYAEmr+nEzcCzb/1qgfWkRYm\nxG/geX2e+c1+0DWssrvdemoqWfLBcnmXx5ztNDl6pTDqHF5yfCyaOu362nyyDJIE\n8Cz2OAUgM7tBGQTPDoax4GyZgdRSVm/VNfecahq72TztaBddmsIDZfVfwypCxwI9\n6axCXFr84Yioqe7Jlm0AnA==\n-----END PRIVATE KEY-----\n',
-  }),
-});
+// Use GOOGLE_APPLICATION_CREDENTIALS env var pointing to a service account JSON file,
+// or set individual env vars: FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY
+let credential;
+if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+  credential = applicationDefault();
+} else {
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  if (!projectId || !clientEmail || !privateKey) {
+    console.error('Missing credentials. Set GOOGLE_APPLICATION_CREDENTIALS or FIREBASE_PROJECT_ID + FIREBASE_CLIENT_EMAIL + FIREBASE_PRIVATE_KEY');
+    process.exit(1);
+  }
+  credential = cert({ projectId, clientEmail, privateKey });
+}
+
+const app = initializeApp({ credential });
 const db = getFirestore(app);
 
 // ---------------------------------------------------------------------------
