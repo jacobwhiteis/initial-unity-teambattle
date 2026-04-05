@@ -20,10 +20,13 @@ export async function handleRemoveDriver(interaction, env) {
     return ephemeralMessage('You do not have staff permissions to use this command.');
   }
 
-  // 2. Find team by tag (query by field, not doc ID, in case tag was edited)
-  const teamResults = await db.queryCollection('teams', 'tag', 'EQUAL', tag);
+  // 2. Find team by tag first, then fall back to name (role may be named after either)
+  let teamResults = await db.queryCollection('teams', 'tag', 'EQUAL', tag);
   if (teamResults.length === 0) {
-    return ephemeralMessage(`No team found with tag **${tag}**.`);
+    teamResults = await db.queryCollection('teams', 'name', 'EQUAL', role.name);
+  }
+  if (teamResults.length === 0) {
+    return ephemeralMessage(`No team found matching role **${role.name}**.`);
   }
   const team = teamResults[0];
   const teamId = team.id;
