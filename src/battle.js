@@ -417,13 +417,15 @@ function renderMapCards() {
   const isCompleted = matchData.status === 'completed';
   const format = matchData.format || 'BO3';
   const score = matchData.liveScore || { teamA: 0, teamB: 0 };
+  const threshold = format === 'BO5' ? 3 : 2;
+  const hasSeriesWinner = score.teamA >= threshold || score.teamB >= threshold;
 
   // Determine which map is currently active (first map without a winner)
-  const activeIdx = results.findIndex(m => !m.mapWinner);
+  const activeIdx = hasSeriesWinner ? -1 : results.findIndex(m => !m.mapWinner);
 
   container.innerHTML = results.map((map, i) => {
-    // Hide unplayed maps (no winner) on completed matches
-    if (isCompleted && !map.mapWinner) return '';
+    // Hide unplayed maps once a team has won the series (or match is completed)
+    if (!map.mapWinner && (isCompleted || hasSeriesWinner)) return '';
     // Progressive reveal: hide maps that shouldn't be shown yet
     // BO3: hide decider until score is 1-1
     if (format === 'BO3' && map.type === 'decider' && score.teamA < 1 && score.teamB < 1) return '';
