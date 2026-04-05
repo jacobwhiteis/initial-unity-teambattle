@@ -491,6 +491,9 @@ async function recordRaceResult(mapIdx, raceType, teamId) {
 
   results[mapIdx] = map;
 
+  // Capture old state before updateDoc triggers onSnapshot
+  const prevMapWinner = matchData.mapResults[mapIdx].mapWinner;
+
   // Recalculate live score
   const liveScore = { teamA: 0, teamB: 0 };
   results.forEach(m => {
@@ -512,7 +515,7 @@ async function recordRaceResult(mapIdx, raceType, teamId) {
   await postToDiscord(threadId, raceResultMessage(mapName, raceType, teamName));
 
   // If map winner just determined, post that too and check for ban/pick resumption
-  if (map.mapWinner && !matchData.mapResults[mapIdx].mapWinner) {
+  if (map.mapWinner && !prevMapWinner) {
     const mapWinnerName = map.mapWinner === matchData.teamA ? matchData.teamAName : matchData.teamBName;
     await postToDiscord(threadId, mapWinnerMessage(
       mapIdx + 1, mapName, mapWinnerName,
