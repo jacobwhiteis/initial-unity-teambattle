@@ -3,7 +3,7 @@ import { db, collection, doc, getDoc, getDocs, query, orderBy, where } from './f
 import { getTier } from './crp.js';
 
 const teamTitle = document.getElementById('teamTitle');
-const teamSubtitle = document.getElementById('teamSubtitle');
+const teamStats = document.getElementById('teamStats');
 const teamContainer = document.getElementById('teamContainer');
 
 const params = new URLSearchParams(window.location.search);
@@ -40,9 +40,9 @@ async function loadTeam() {
   teamTitle.innerHTML = `<span>${team.tag}</span> ${team.name}`;
   document.title = `${team.name} [${team.tag}] — IU Team Battles`;
 
-  const winPct = standings && (standings.wins + standings.losses > 0)
-    ? Math.round((standings.wins / (standings.wins + standings.losses)) * 100)
-    : 0;
+  const wins = standings?.wins || 0;
+  const losses = standings?.losses || 0;
+  const winPct = (wins + losses > 0) ? Math.round((wins / (wins + losses)) * 100) : 0;
   const streak = standings
     ? standings.streak > 0
       ? `W${standings.streak}`
@@ -50,26 +50,67 @@ async function loadTeam() {
         ? `L${Math.abs(standings.streak)}`
         : '-'
     : '-';
+  const streakClass = standings?.streak > 0 ? 'streak-pos' : standings?.streak < 0 ? 'streak-neg' : '';
 
   const tier = standings ? getTier(standings.position) : 'Unranked';
-  const posStr = standings?.position ? `#${standings.position}` : 'Unranked';
+  const posStr = standings?.position ? `#${standings.position}` : '-';
+  const mapWins = standings?.mapWins || 0;
+  const mapLosses = standings?.mapLosses || 0;
 
-  teamSubtitle.textContent = standings
-    ? `${posStr} · ${tier} — ${standings.wins}W ${standings.losses}L (${winPct}%) — ${streak} streak — ${standings.crp || 0} CRP`
-    : 'No matches played';
+  if (standings) {
+    const rateClass = winPct >= 60 ? 'rate-high' : winPct >= 40 ? 'rate-mid' : 'rate-low';
+
+    teamStats.innerHTML = `
+      <div class="team-profile-stats">
+        <div class="profile-stats-primary">
+          <div class="profile-stat profile-stat-pos">
+            <span class="profile-stat-value">${posStr}</span>
+            <span class="profile-stat-label">Position</span>
+          </div>
+          <div class="profile-stat profile-stat-tier">
+            <span class="profile-stat-value"><span class="tier-badge tier-${tier}">${tier}</span></span>
+            <span class="profile-stat-label">Tier</span>
+          </div>
+          <div class="profile-stat profile-stat-crp">
+            <span class="profile-stat-value">${standings.crp || 0}</span>
+            <span class="profile-stat-label">CRP</span>
+          </div>
+        </div>
+        <div class="profile-stats-secondary">
+          <div class="profile-stat">
+            <span class="profile-stat-value"><span class="w">${wins}</span><span style="color:var(--text-mute);margin:0 .15em;">-</span><span class="l">${losses}</span></span>
+            <span class="profile-stat-label">Record</span>
+          </div>
+          <div class="profile-stat profile-stat-winrate">
+            <span class="profile-stat-value">${winPct}%</span>
+            <span class="profile-stat-label">Win Rate</span>
+            <div class="winrate-bar-track"><div class="winrate-bar-fill ${rateClass}" style="width:${winPct}%"></div></div>
+          </div>
+          <div class="profile-stat">
+            <span class="profile-stat-value"><span class="w">${mapWins}</span><span style="color:var(--text-mute);margin:0 .15em;">-</span><span class="l">${mapLosses}</span></span>
+            <span class="profile-stat-label">Maps</span>
+          </div>
+          <div class="profile-stat">
+            <span class="profile-stat-value ${streakClass}">${streak}</span>
+            <span class="profile-stat-label">Streak</span>
+          </div>
+        </div>
+      </div>
+    `;
+  } else {
+    teamStats.innerHTML = '<p style="color:var(--text-dim);margin-top:.5rem;">No matches played</p>';
+  }
 
   // Get matches for this team (only completed)
   let allMatches = [];
   try {
     const matchesA = await getDocs(query(
       collection(db, 'matches'),
-      where('teamA', '==', team.id),
-      orderBy('date', 'desc')
+      where('teamA', '==', team.id)
     ));
     const matchesB = await getDocs(query(
       collection(db, 'matches'),
-      where('teamB', '==', team.id),
-      orderBy('date', 'desc')
+      where('teamB', '==', team.id)
     ));
 
     allMatches = [
@@ -121,6 +162,8 @@ async function loadTeam() {
         : '';
       const tagA = match.teamATag ? ` [${match.teamATag}]` : '';
       const tagB = match.teamBTag ? ` [${match.teamBTag}]` : '';
+      const mapList = match.mapResults?.length ? match.mapResults : match.maps || [];
+      const mapNames = mapList.filter(m => m.mapWinner != null).map(m => m.mapName).join(', ');
 
       html += `
         <div class="match-card" onclick="window.location.href='/match?id=${match.id}'">
@@ -129,7 +172,10 @@ async function loadTeam() {
             <span class="match-score">${match.score?.teamA ?? 0} — ${match.score?.teamB ?? 0}</span>
             <span class="match-team ${!isTeamAWinner ? 'winner' : 'loser'}">${match.teamBName}${tagB}</span>
           </div>
-          <span class="match-date">${dateStr}</span>
+          <div class="match-meta">
+            ${mapNames ? `<span class="match-maps">${mapNames}</span>` : ''}
+            <span class="match-date">${dateStr}</span>
+          </div>
         </div>
       `;
     });

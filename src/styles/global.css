@@ -412,6 +412,156 @@ body {
 }
 
 /* ============================================
+   TEAM PROFILE STATS
+   ============================================ */
+.team-profile-stats {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+/* --- Primary row: Position, Tier, CRP --- */
+.profile-stats-primary {
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    gap: 1.25rem;
+}
+
+.profile-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 80px;
+    padding: .75rem 1.25rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    transition: border-color .2s;
+}
+
+/* Position — hero stat */
+.profile-stat-pos {
+    min-width: 100px;
+    padding: 1rem 1.5rem;
+    border-color: var(--accent);
+    background: linear-gradient(135deg, rgba(255,85,32,.08) 0%, var(--panel) 100%);
+    box-shadow: 0 0 20px rgba(255,85,32,.1), inset 0 0 20px rgba(255,85,32,.03);
+}
+
+.profile-stat-pos .profile-stat-value {
+    font-family: var(--font-heading);
+    font-size: 2.5rem;
+    color: var(--accent);
+    line-height: 1;
+    text-shadow: 0 0 20px rgba(255,85,32,.3);
+}
+
+/* CRP — secondary hero */
+.profile-stat-crp {
+    min-width: 90px;
+    padding: 1rem 1.5rem;
+    border-color: #333;
+    background: linear-gradient(135deg, rgba(255,255,255,.03) 0%, var(--panel) 100%);
+}
+
+.profile-stat-crp .profile-stat-value {
+    font-size: 2rem;
+    color: #fff;
+}
+
+/* Tier stat */
+.profile-stat-tier {
+    padding: 1rem 1.5rem;
+}
+
+.profile-stat-value {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    letter-spacing: 1px;
+    color: #fff;
+    line-height: 1.2;
+}
+
+.profile-stat-value .w { color: var(--win); }
+.profile-stat-value .l { color: var(--loss); }
+.profile-stat-value .streak-pos { color: var(--win); }
+.profile-stat-value .streak-neg { color: var(--loss); }
+
+.profile-stat-label {
+    font-family: var(--font-condensed);
+    font-size: .7rem;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+    margin-top: .35rem;
+}
+
+/* --- Secondary row: Record, Win Rate, Maps, Streak --- */
+.profile-stats-secondary {
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    gap: 1rem;
+}
+
+.profile-stats-secondary .profile-stat {
+    min-width: 90px;
+    padding: .6rem 1rem;
+    background: var(--surface);
+    border-color: var(--border);
+    border-radius: 8px;
+}
+
+.profile-stats-secondary .profile-stat-value {
+    font-size: 1.25rem;
+}
+
+/* Win rate progress bar */
+.profile-stat-winrate {
+    min-width: 120px;
+}
+
+.winrate-bar-track {
+    width: 100%;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: .5rem;
+    overflow: hidden;
+}
+
+.winrate-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width .6s ease;
+}
+
+.winrate-bar-fill.rate-high { background: var(--win); }
+.winrate-bar-fill.rate-mid  { background: #c9a227; }
+.winrate-bar-fill.rate-low  { background: var(--loss); }
+
+/* Responsive */
+@media (max-width: 600px) {
+    .profile-stats-primary,
+    .profile-stats-secondary {
+        flex-wrap: wrap;
+        gap: .75rem;
+    }
+    .profile-stat-pos {
+        min-width: 80px;
+        padding: .75rem 1rem;
+    }
+    .profile-stat-pos .profile-stat-value {
+        font-size: 2rem;
+    }
+}
+
+/* ============================================
    CONTENT SECTION
    ============================================ */
 .content-section {
