@@ -325,6 +325,11 @@ async function resumeBanpick(nextRound, firstBanPhase) {
       liveScore: score,
     });
     toast(`Ban/Pick resumed for round ${nextRound}`);
+
+    // Notify Discord
+    const threadId = matchData.discordThreadId || null;
+    const url = `${window.location.origin}/banpick?join=${matchData.banpickSessionId}`;
+    await postToDiscord(threadId, `🗺️ **Score tied ${score.teamA}\u2013${score.teamB}!** Returning to ban phase for the decider map.\n${url}`);
   } catch (e) {
     console.error('Failed to resume ban/pick:', e);
     toast('Failed to resume ban/pick', true);
