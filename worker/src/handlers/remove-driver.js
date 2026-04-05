@@ -1,7 +1,7 @@
 import { ephemeralMessage, getOption, getResolvedRole, removeRoleFromMember } from '../lib/discord.js';
 import { createFirestoreClient } from '../lib/firestore.js';
 
-const MAX_ROSTER_SIZE = 6;
+const MAX_ROSTER_SIZE = 8;
 
 export async function handleRemoveDriver(interaction, env) {
   const role = getResolvedRole(interaction, 'team');
