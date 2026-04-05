@@ -728,24 +728,26 @@ function renderRacingView() {
 
     let mapsHtml = '';
 
-    // Show homes
-    if (localState.homeA !== null) {
-        const homeA = MAPS.find(m => m.id === localState.homeA);
-        const homeB = MAPS.find(m => m.id === localState.homeB);
-        mapsHtml += `<div class="racing-map-row">
-            <div class="racing-map-card">${createResultCard(homeA, 'picked')}<div class="racing-map-label">${nameA} HOME</div></div>
-            <div class="racing-map-card">${createResultCard(homeB, 'picked')}<div class="racing-map-label">${nameB} HOME</div></div>
-        </div>`;
-    }
-
-    // Show secondary picks
-    if (picks.length > 0) {
-        mapsHtml += '<div class="racing-map-row">';
-        picks.forEach((pickId, i) => {
-            const pickMap = MAPS.find(m => m.id === pickId);
-            mapsHtml += `<div class="racing-map-card">${createResultCard(pickMap, 'picked')}<div class="racing-map-label">MAP ${3 + i}</div></div>`;
-        });
-        mapsHtml += '</div>';
+    if (round === 1) {
+        // Round 1: show home maps
+        if (localState.homeA !== null) {
+            const homeA = MAPS.find(m => m.id === localState.homeA);
+            const homeB = MAPS.find(m => m.id === localState.homeB);
+            mapsHtml += `<div class="racing-map-row">
+                <div class="racing-map-card">${createResultCard(homeA, 'picked')}<div class="racing-map-label">${nameA} HOME</div></div>
+                <div class="racing-map-card">${createResultCard(homeB, 'picked')}<div class="racing-map-label">${nameB} HOME</div></div>
+            </div>`;
+        }
+    } else if (round === 2) {
+        // Round 2: show secondary picks
+        if (picks.length > 0) {
+            mapsHtml += '<div class="racing-map-row">';
+            picks.forEach((pickId, i) => {
+                const pickMap = MAPS.find(m => m.id === pickId);
+                mapsHtml += `<div class="racing-map-card">${createResultCard(pickMap, 'picked')}<div class="racing-map-label">MAP ${3 + i}</div></div>`;
+            });
+            mapsHtml += '</div>';
+        }
     }
 
     const battleLink = localState.matchId ? `<a href="/battle?id=${localState.matchId}" class="racing-battle-link" target="_blank">Go to Battle Page</a>` : '';
