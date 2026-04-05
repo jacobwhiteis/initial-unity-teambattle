@@ -741,8 +741,8 @@ function renderRacingView() {
         </div>`;
     }
 
-    // Show secondary picks if round 2 complete
-    if (round >= 2 && picks.length > 0) {
+    // Show secondary picks
+    if (picks.length > 0) {
         mapsHtml += '<div class="racing-map-row">';
         picks.forEach((pickId, i) => {
             const pickMap = MAPS.find(m => m.id === pickId);
