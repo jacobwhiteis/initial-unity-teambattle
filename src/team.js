@@ -37,7 +37,7 @@ async function loadTeam() {
   const standings = standingsDoc.exists() ? standingsDoc.data() : null;
 
   // Update page title
-  teamTitle.innerHTML = `<span>${team.tag}</span> ${team.name}`;
+  teamTitle.innerHTML = `<span>[${team.tag}]</span> ${team.name}`;
   document.title = `${team.name} [${team.tag}] — IU Team Battles`;
 
   const wins = standings?.wins || 0;
