@@ -81,6 +81,14 @@ const commands = [
       { name: 'team_tag', description: 'Team tag (e.g. MTD, AKG)', type: 3, required: true },
     ],
   },
+  {
+    name: 'link-team',
+    description: 'Link a Discord role to a team (staff only)',
+    options: [
+      { name: 'team', description: 'Team role (e.g. @MTD)', type: 8, required: true },
+      { name: 'team_tag', description: 'Team tag (e.g. AAC, NS)', type: 3, required: true },
+    ],
+  },
 ];
 
 async function registerCommands() {

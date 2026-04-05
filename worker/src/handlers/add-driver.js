@@ -12,7 +12,6 @@ export async function handleAddDriver(interaction, env) {
   if (!role || !role.name) {
     return ephemeralMessage('Could not resolve the team role. Please select a valid role.');
   }
-  const tag = role.name.toUpperCase();
   const playerId = getOption(interaction, 'player');
   const displayName = getOption(interaction, 'display_name');
   const car = (getOption(interaction, 'car') || '').toUpperCase();
@@ -34,13 +33,10 @@ export async function handleAddDriver(interaction, env) {
     return ephemeralMessage('You do not have staff permissions to use this command.');
   }
 
-  // 2. Find team by tag first, then fall back to name (role may be named after either)
-  let teamResults = await db.queryCollection('teams', 'tag', 'EQUAL', tag);
+  // 2. Find team by discordRoleId
+  const teamResults = await db.queryCollection('teams', 'discordRoleId', 'EQUAL', role.id);
   if (teamResults.length === 0) {
-    teamResults = await db.queryCollection('teams', 'name', 'EQUAL', role.name);
-  }
-  if (teamResults.length === 0) {
-    return ephemeralMessage(`No team found matching role **${role.name}**.`);
+    return ephemeralMessage(`No team is linked to role **${role.name}**. Link a team first via the admin dashboard.`);
   }
   const team = teamResults[0];
   const teamId = team.id;

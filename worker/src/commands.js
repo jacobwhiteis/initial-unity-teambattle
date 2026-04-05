@@ -154,7 +154,26 @@ export const VIEW_TEAM_HISTORY = {
   ],
 };
 
+export const LINK_TEAM = {
+  name: 'link-team',
+  description: 'Link a Discord role to a team (staff only)',
+  options: [
+    {
+      name: 'team',
+      description: 'Team role (e.g. @MTD)',
+      type: 8, // ROLE
+      required: true,
+    },
+    {
+      name: 'team_tag',
+      description: 'Team tag (e.g. AAC, NS)',
+      type: 3, // STRING
+      required: true,
+    },
+  ],
+};
+
 export const ALL_COMMANDS = [
   ADD_TEAM_DRIVER, REMOVE_TEAM_DRIVER, CHANGE_CAR,
-  VIEW_TEAM, VIEW_DRIVER, STANDINGS, VIEW_TEAM_HISTORY,
+  VIEW_TEAM, VIEW_DRIVER, STANDINGS, VIEW_TEAM_HISTORY, LINK_TEAM,
 ];
