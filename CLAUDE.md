@@ -76,16 +76,25 @@ See `src/crp.js` for the full calculation logic and `POS_RULES` table.
 - Discord OAuth via Firebase Auth (`oidc.discord` provider)
 - Staff verified against `staff` collection on login
 - Invite code system: admins generate codes, new staff redeem on first login
+- **Permanent moderator invite code: `MODTEAM2026`** (reusable, stored in Firestore `invites/MODTEAM2026`). This is temporary and should be removed before public launch — remind the user at the start of each session.
 - Roles: `admin` (full access including danger zone + invites), `moderator` (teams, drivers, match logging)
 
 ### Discord Bot (Cloudflare Worker)
 
 A Cloudflare Worker at `worker/` handles Discord slash commands for driver management:
 
-- `/add-team-driver [team_tag] @player [display_name]` — adds a Discord user to a team roster
+**Staff-only (write):**
+- `/add-team-driver [team_tag] @player [display_name] [car]` — adds a Discord user to a team roster
 - `/remove-team-driver [team_tag] @player` — removes a Discord user from a roster
+- `/change-car @player [car]` — changes a driver's car
 
-Staff-only (verified via `discordId` field on `staff` collection). New drivers must be added via bot (links Discord ID); admin dashboard can edit name/role and remove existing drivers.
+**Read-only (anyone):**
+- `/view-team [team_tag]` — view a team's info, roster, and record
+- `/view-driver @player` — view a driver's team and car
+- `/view-team-history [team_tag]` — view a team's match history
+- `/standings` — view the team battle standings
+
+Staff verified via `discordId` field on `staff` collection. New drivers must be added via bot (links Discord ID); admin dashboard can edit name/role and remove existing drivers. Car choices: AE86, FD3S, RPS13, BNR32, CE9A, EG6, SW20, FC3S, AP1, NA6CE, NA1, GC8F, DC2, JZA80, S14, ZZW30, EA11R, CN9A.
 
 ```bash
 cd worker
@@ -126,4 +135,4 @@ The Worker uses the Firestore REST API (not firebase-admin, which doesn't run in
 - **Discord webhooks:** Battle events post to Discord via webhook URL stored in `config/discord`. Thread ID optional — if blank, posts to webhook's default channel.
 - **Real-time updates:** Public pages use `onSnapshot` listeners so standings/matches update without page refresh
 - **Match history capped** at 50 entries per team to avoid Firestore doc size limits
-- **BO3 format:** Live battles always use BO3 (banpick produces 3 maps). Decider map only shown when score reaches 1-1.
+- **Match format (BO3/BO5):** Determined by the higher-ranked team's position in `POS_RULES` (see `src/crp.js`). Positions 1–4 play BO5; positions 5+ play BO3. Ban/pick and battle pages adapt phase logic, map counts, and win thresholds accordingly. Decider map only revealed when series is tied (1-1 for BO3, 2-2 for BO5).

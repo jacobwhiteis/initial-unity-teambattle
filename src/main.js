@@ -190,7 +190,9 @@ function toggleExpand(tbody, tr, expTr, team, mode) {
   }
   histHtml += '</div>';
 
-  inner.innerHTML = driverHtml + histHtml;
+  const linkHtml = `<div style="margin-top:.75rem;text-align:right;"><a href="/team?t=${team.teamTag || ''}" style="color:var(--primary);font-size:.82rem;text-decoration:none;">View full team page &rarr;</a></div>`;
+
+  inner.innerHTML = driverHtml + histHtml + linkHtml;
   expTr.style.display = 'table-row';
 }
 

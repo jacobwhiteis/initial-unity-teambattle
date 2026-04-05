@@ -353,6 +353,7 @@ function refreshTeamList() {
         <span class="ml-name">${t.name}</span>
         <span class="ml-info">${standing?.wins || 0}W / ${standing?.losses || 0}L</span>
         <span class="ml-crp">${standing?.crp || 0} CRP</span>
+        <a href="/team?t=${t.tag}" class="btn btn-ghost btn-sm" style="text-decoration:none;" target="_blank">View</a>
         <button class="btn btn-ghost btn-sm" data-edit-team="${t.id}">Edit</button>
       </div>
       <div style="width:100%;padding-top:.4rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
