@@ -7,6 +7,7 @@ import { handleViewDriver } from './handlers/view-driver.js';
 import { handleStandings } from './handlers/standings.js';
 import { handleViewTeamHistory } from './handlers/view-team-history.js';
 import { handleLinkTeam } from './handlers/link-team.js';
+import { handleCreateTeam } from './handlers/create-team.js';
 
 export default {
   async fetch(request, env) {
@@ -37,6 +38,7 @@ export default {
         if (name === 'standings') return await handleStandings(interaction, env);
         if (name === 'view-team-history') return await handleViewTeamHistory(interaction, env);
         if (name === 'link-team') return await handleLinkTeam(interaction, env);
+        if (name === 'create-team') return await handleCreateTeam(interaction, env);
       } catch (err) {
         console.error(`Error handling /${name}:`, err);
         return ephemeralMessage('Something went wrong. Please try again.');

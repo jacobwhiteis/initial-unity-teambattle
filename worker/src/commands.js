@@ -154,6 +154,25 @@ export const VIEW_TEAM_HISTORY = {
   ],
 };
 
+export const CREATE_TEAM = {
+  name: 'create-team',
+  description: 'Create a new team with a Discord role (staff only)',
+  options: [
+    {
+      name: 'name',
+      description: 'Team name (e.g. Akagi Aircraft Carrier)',
+      type: 3, // STRING
+      required: true,
+    },
+    {
+      name: 'tag',
+      description: 'Short tag (e.g. AAC)',
+      type: 3, // STRING
+      required: true,
+    },
+  ],
+};
+
 export const LINK_TEAM = {
   name: 'link-team',
   description: 'Link a Discord role to a team (staff only)',
@@ -175,5 +194,5 @@ export const LINK_TEAM = {
 
 export const ALL_COMMANDS = [
   ADD_TEAM_DRIVER, REMOVE_TEAM_DRIVER, CHANGE_CAR,
-  VIEW_TEAM, VIEW_DRIVER, STANDINGS, VIEW_TEAM_HISTORY, LINK_TEAM,
+  VIEW_TEAM, VIEW_DRIVER, STANDINGS, VIEW_TEAM_HISTORY, CREATE_TEAM, LINK_TEAM,
 ];

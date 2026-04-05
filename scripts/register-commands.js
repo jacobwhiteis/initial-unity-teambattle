@@ -82,6 +82,14 @@ const commands = [
     ],
   },
   {
+    name: 'create-team',
+    description: 'Create a new team with a Discord role (staff only)',
+    options: [
+      { name: 'name', description: 'Team name (e.g. Akagi Aircraft Carrier)', type: 3, required: true },
+      { name: 'tag', description: 'Short tag (e.g. AAC)', type: 3, required: true },
+    ],
+  },
+  {
     name: 'link-team',
     description: 'Link a Discord role to a team (staff only)',
     options: [
