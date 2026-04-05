@@ -1,7 +1,7 @@
 import './nav.js';
 import {
   db, auth, collection, doc, getDoc, getDocs, query, orderBy, onSnapshot,
-  setDoc, updateDoc, deleteDoc, writeBatch, Timestamp, onAuthStateChanged
+  updateDoc, writeBatch, Timestamp, onAuthStateChanged
 } from './firebase.js';
 import { finalizeMatch } from './finalize.js';
 import { postToDiscord, raceResultMessage, mapWinnerMessage, matchFinalizedMessage, banpickCompleteMessage } from './discord.js';
@@ -231,6 +231,7 @@ function handleSessionUpdate() {
 }
 
 async function regenerateBanpickSession() {
+  if (!isStaff || !matchData || matchData.status !== 'banpick') return;
   if (!confirm('This will delete the current ban/pick session and create a new one. Continue?')) return;
 
   const btn = document.getElementById('regenerateBanpickBtn');
