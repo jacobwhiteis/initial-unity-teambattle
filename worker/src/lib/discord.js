@@ -68,6 +68,9 @@ export async function addRoleToMember(env, guildId, userId, roleId) {
       headers: { Authorization: `Bot ${env.DISCORD_BOT_TOKEN}` },
     }
   );
+  if (res.status !== 204) {
+    console.error(`Discord role add failed: ${res.status} ${await res.text()}`);
+  }
   return res.status === 204;
 }
 
@@ -80,5 +83,8 @@ export async function removeRoleFromMember(env, guildId, userId, roleId) {
       headers: { Authorization: `Bot ${env.DISCORD_BOT_TOKEN}` },
     }
   );
+  if (res.status !== 204) {
+    console.error(`Discord role remove failed: ${res.status} ${await res.text()}`);
+  }
   return res.status === 204;
 }

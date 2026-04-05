@@ -84,8 +84,8 @@ See `src/crp.js` for the full calculation logic and `POS_RULES` table.
 A Cloudflare Worker at `worker/` handles Discord slash commands for driver management:
 
 **Staff-only (write):**
-- `/add-team-driver [team_tag] @player [display_name] [car]` — adds a Discord user to a team roster
-- `/remove-team-driver [team_tag] @player` — removes a Discord user from a roster
+- `/add-team-driver @team_role @player [display_name] [car]` — adds a Discord user to a team roster and assigns the team's Discord role
+- `/remove-team-driver @team_role @player` — removes a Discord user from a roster and removes the team's Discord role
 - `/change-car @player [car]` — changes a driver's car
 
 **Read-only (anyone):**
@@ -102,7 +102,9 @@ npm run dev          # Local dev with wrangler
 npm run deploy       # Deploy to Cloudflare
 ```
 
-Secrets (set via `npx wrangler secret put`): `DISCORD_PUBLIC_KEY`, `DISCORD_APP_ID`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY`
+Secrets (set via `npx wrangler secret put`): `DISCORD_PUBLIC_KEY`, `DISCORD_APP_ID`, `DISCORD_BOT_TOKEN`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY`
+
+The bot requires the **Manage Roles** permission in Discord, and its role must be positioned above team roles in the server hierarchy for role assignment to work.
 
 Command registration: `DISCORD_APP_ID=... DISCORD_BOT_TOKEN=... node scripts/register-commands.js`
 
