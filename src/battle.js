@@ -1,7 +1,7 @@
 import './nav.js';
 import {
   db, auth, collection, doc, getDoc, getDocs, query, orderBy, onSnapshot,
-  updateDoc, Timestamp, onAuthStateChanged
+  setDoc, updateDoc, deleteDoc, writeBatch, Timestamp, onAuthStateChanged
 } from './firebase.js';
 import { finalizeMatch } from './finalize.js';
 import { postToDiscord, raceResultMessage, mapWinnerMessage, matchFinalizedMessage, banpickCompleteMessage } from './discord.js';
@@ -81,6 +81,8 @@ if (!matchId) {
     // Re-render if match data is already loaded so staff controls appear
     if (matchData) render();
   });
+
+  document.getElementById('regenerateBanpickBtn')?.addEventListener('click', regenerateBanpickSession);
 
   // Listen to match document in real-time
   onSnapshot(doc(db, 'matches', matchId), (snap) => {
@@ -162,6 +164,9 @@ function render() {
       banpickLink.textContent = url;
     }
 
+    const regenBtn = document.getElementById('regenerateBanpickBtn');
+    if (regenBtn) regenBtn.style.display = isStaff ? 'inline-block' : 'none';
+
   } else if (matchData.status === 'in_progress') {
     if (banpickState) banpickState.style.display = 'none';
     if (mapCards) mapCards.style.display = 'flex';
@@ -222,6 +227,51 @@ function handleSessionUpdate() {
   // Re-render to update banpick banner visibility
   if (matchData.status === 'in_progress') {
     render();
+  }
+}
+
+async function regenerateBanpickSession() {
+  if (!confirm('This will delete the current ban/pick session and create a new one. Continue?')) return;
+
+  const btn = document.getElementById('regenerateBanpickBtn');
+  if (btn) btn.disabled = true;
+
+  try {
+    const oldSessionId = matchData.banpickSessionId;
+    const newSessionId = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+    if (sessionUnsubscribe) {
+      sessionUnsubscribe();
+      sessionUnsubscribe = null;
+      sessionData = null;
+      lastProcessedSessionState = null;
+    }
+
+    const batch = writeBatch(db);
+    batch.delete(doc(db, 'sessions', oldSessionId));
+    batch.set(doc(db, 'sessions', newSessionId), {
+      phase: 'WAITING',
+      format: matchData.format,
+      round: 1,
+      homeA: null, homeB: null, bans: [], picks: [],
+      liveScore: { teamA: 0, teamB: 0 },
+      teamAHigherRank: true,
+      matchId: matchData.id,
+      history: [{ text: 'Session regenerated.', timestamp: Date.now() }],
+      createdAt: Date.now(),
+      teamAName: matchData.teamAName,
+      teamBName: matchData.teamBName,
+      teamAClaimed: false, teamBClaimed: false
+    });
+    batch.update(doc(db, 'matches', matchId), { banpickSessionId: newSessionId });
+    await batch.commit();
+
+    toast('Ban/Pick session regenerated');
+  } catch (e) {
+    console.error('Failed to regenerate ban/pick:', e);
+    toast('Failed to regenerate ban/pick', true);
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
 
