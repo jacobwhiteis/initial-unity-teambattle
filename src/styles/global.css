@@ -118,7 +118,7 @@ body {
 .nav-logo em {
     color: var(--text-dim);
     font-style: normal;
-    font-size: .75rem;
+    font-size: .85rem;
     margin-left: .5rem;
     letter-spacing: .08em;
     vertical-align: middle;
@@ -133,7 +133,7 @@ body {
 
 .nav-links a {
     font-family: var(--font-condensed);
-    font-size: 0.9rem;
+    font-size: 1rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .1em;
@@ -176,7 +176,7 @@ body {
 .nav-links .staff-login {
     color: var(--text-mute);
     border: 1px solid var(--gold-dim);
-    font-size: 0.75rem;
+    font-size: 0.85rem;
 }
 
 .nav-links .staff-login:hover {
@@ -260,7 +260,7 @@ body {
 
 .page-sub {
     color: var(--text-dim);
-    font-size: .83rem;
+    font-size: .95rem;
     letter-spacing: .04em;
     margin: .3rem 0 0;
 }
@@ -350,7 +350,7 @@ body {
 }
 
 .hero-stat-label {
-    font-size: 0.8rem;
+    font-size: 0.92rem;
     color: var(--text-dim);
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -493,7 +493,7 @@ body {
 
 .profile-stat-label {
     font-family: var(--font-condensed);
-    font-size: .7rem;
+    font-size: .82rem;
     font-weight: 600;
     letter-spacing: .1em;
     text-transform: uppercase;
@@ -586,7 +586,7 @@ body {
     border: none;
     color: var(--text-dim);
     font-family: var(--font-condensed);
-    font-size: .9rem;
+    font-size: 1rem;
     font-weight: 700;
     letter-spacing: .1em;
     text-transform: uppercase;
@@ -855,7 +855,7 @@ tr.expand-row td {
 
 .exp-section h4 {
     font-family: var(--font-condensed);
-    font-size: .72rem;
+    font-size: .82rem;
     font-weight: 700;
     letter-spacing: .12em;
     text-transform: uppercase;
@@ -869,13 +869,13 @@ tr.expand-row td {
     gap: .6rem;
     padding: .38rem 0;
     border-bottom: 1px solid var(--border);
-    font-size: .86rem;
+    font-size: .97rem;
 }
 
 .driver-row:last-child { border-bottom: none; }
 
 .role-pill {
-    font-size: .68rem;
+    font-size: .78rem;
     font-weight: 700;
     letter-spacing: .05em;
     padding: .08rem .32rem;
@@ -890,7 +890,7 @@ tr.expand-row td {
 .driver-car {
     margin-left: auto;
     color: var(--text-dim);
-    font-size: .8rem;
+    font-size: .9rem;
 }
 
 /* History in expanded rows */
@@ -900,7 +900,7 @@ tr.expand-row td {
     gap: .7rem;
     padding: .32rem 0;
     border-bottom: 1px solid var(--border);
-    font-size: .83rem;
+    font-size: .95rem;
 }
 
 .match-row:last-child { border-bottom: none; }
@@ -908,7 +908,7 @@ tr.expand-row td {
 .res-pill {
     font-family: var(--font-condensed);
     font-weight: 700;
-    font-size: .72rem;
+    font-size: .82rem;
     letter-spacing: .05em;
     padding: .08rem .38rem;
     border-radius: 3px;
@@ -920,8 +920,8 @@ tr.expand-row td {
 .res-pill.loss { background: rgba(192,80,80,.18);  color: var(--loss); }
 
 .match-opp { flex: 1; }
-.match-crp { color: var(--accent); font-weight: 600; font-size: .8rem; }
-.match-ts  { color: var(--text-mute); font-size: .73rem; }
+.match-crp { color: var(--accent); font-weight: 600; font-size: .9rem; }
+.match-ts  { color: var(--text-mute); font-size: .83rem; }
 
 /* ============================================
    SUB-TEAM ROWS
@@ -932,7 +932,7 @@ tr.expand-row td {
     gap: .5rem;
     padding: .3rem 0;
     border-bottom: 1px solid var(--border);
-    font-size: .84rem;
+    font-size: .95rem;
     color: var(--text-dim);
 }
 
@@ -989,7 +989,7 @@ tr.expand-row td {
     color: var(--accent);
     padding: 3px 12px;
     border-radius: 4px;
-    font-size: 0.9rem;
+    font-size: 1rem;
     font-weight: 700;
     letter-spacing: 1px;
 }
@@ -1004,7 +1004,7 @@ tr.expand-row td {
 }
 
 .match-maps {
-    font-size: 0.7rem;
+    font-size: 0.82rem;
     color: var(--text-mute);
     letter-spacing: 1px;
     text-transform: uppercase;
@@ -1012,7 +1012,7 @@ tr.expand-row td {
 
 .match-date {
     color: var(--text-mute);
-    font-size: 0.8rem;
+    font-size: 0.9rem;
 }
 
 /* ============================================
@@ -1029,7 +1029,7 @@ tr.expand-row td {
     padding: 3px 10px;
     border-radius: 4px;
     font-family: var(--font-label);
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     font-weight: 700;
     letter-spacing: 1px;
     text-transform: uppercase;
@@ -1073,7 +1073,7 @@ tr.expand-row td {
 
 .section-subtext {
     color: var(--text-mute);
-    font-size: 0.85rem;
+    font-size: 0.95rem;
     margin-top: -12px;
     margin-bottom: 20px;
 }
@@ -1110,7 +1110,7 @@ tr.expand-row td {
 
 .team-stats-line {
     color: var(--text-dim);
-    font-size: 0.9rem;
+    font-size: 1rem;
 }
 
 .roster-grid {
@@ -1125,7 +1125,7 @@ tr.expand-row td {
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 4px;
-    font-size: 0.9rem;
+    font-size: 1rem;
 }
 
 /* ============================================
@@ -1193,7 +1193,7 @@ tr.expand-row td {
 
 .map-winner-badge {
     font-family: var(--font-condensed);
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     font-weight: 700;
     padding: 3px 10px;
     border-radius: 3px;
@@ -1228,7 +1228,7 @@ tr.expand-row td {
 
 .race-label {
     font-family: var(--font-condensed);
-    font-size: 0.7rem;
+    font-size: 0.82rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .1em;
@@ -1241,7 +1241,7 @@ tr.expand-row td {
 }
 
 .race-drivers {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     color: var(--text-dim);
     margin-top: 4px;
 }
@@ -1295,7 +1295,7 @@ tr.expand-row td {
     background: var(--header-bg);
     padding: .75rem 1rem;
     font-family: var(--font-condensed);
-    font-size: .72rem;
+    font-size: .82rem;
     font-weight: 700;
     letter-spacing: .12em;
     text-transform: uppercase;
@@ -1313,7 +1313,7 @@ tr.expand-row td {
     padding: .8rem 1rem;
     color: var(--text-dim);
     font-family: var(--font-body);
-    font-size: .88rem;
+    font-size: 1rem;
     cursor: pointer;
     transition: all .1s;
 }
@@ -1358,7 +1358,7 @@ tr.expand-row td {
 label {
     display: block;
     font-family: var(--font-condensed);
-    font-size: .72rem;
+    font-size: .82rem;
     font-weight: 700;
     letter-spacing: .1em;
     text-transform: uppercase;
@@ -1377,7 +1377,7 @@ textarea {
     border-radius: 4px;
     color: var(--text);
     font-family: var(--font-body);
-    font-size: .92rem;
+    font-size: 1rem;
     padding: .6rem .8rem;
     outline: none;
     transition: border-color .12s;
@@ -1405,7 +1405,7 @@ textarea { resize: vertical; min-height: 70px; }
     border-radius: 4px;
     font-family: var(--font-condensed);
     font-weight: 700;
-    font-size: .88rem;
+    font-size: 1rem;
     letter-spacing: .1em;
     text-transform: uppercase;
     padding: .6rem 1.4rem;
@@ -1442,7 +1442,7 @@ textarea { resize: vertical; min-height: 70px; }
     border-color: var(--text-mute);
 }
 
-.btn-sm  { font-size: .75rem; padding: .35rem .75rem; }
+.btn-sm  { font-size: .85rem; padding: .35rem .75rem; }
 .btn-full { width: 100%; display: block; text-align: center; }
 
 .form-actions {
@@ -1454,7 +1454,7 @@ textarea { resize: vertical; min-height: 70px; }
 
 .err-msg {
     color: var(--red);
-    font-size: .8rem;
+    font-size: .9rem;
     margin-top: .4rem;
     display: none;
 }
@@ -1467,7 +1467,7 @@ textarea { resize: vertical; min-height: 70px; }
     border: 1px solid var(--gold-dim);
     border-radius: 4px;
     padding: .75rem 1rem;
-    font-size: .82rem;
+    font-size: .92rem;
     color: var(--text-dim);
     margin-bottom: 1.1rem;
     line-height: 1.5;
@@ -1486,7 +1486,7 @@ textarea { resize: vertical; min-height: 70px; }
 
 .crp-preview h5 {
     font-family: var(--font-condensed);
-    font-size: .72rem;
+    font-size: .82rem;
     font-weight: 700;
     letter-spacing: .1em;
     text-transform: uppercase;
@@ -1497,7 +1497,7 @@ textarea { resize: vertical; min-height: 70px; }
 .crp-row {
     display: flex;
     justify-content: space-between;
-    font-size: .85rem;
+    font-size: .95rem;
     padding: .18rem 0;
 }
 
@@ -1531,11 +1531,11 @@ textarea { resize: vertical; min-height: 70px; }
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 4px;
-    font-size: .87rem;
+    font-size: .97rem;
 }
 
 .ml-name { flex: 1; font-weight: 600; }
-.ml-info { color: var(--text-dim); font-size: .8rem; }
+.ml-info { color: var(--text-dim); font-size: .9rem; }
 .ml-crp  { color: var(--accent); font-family: var(--font-condensed); font-weight: 700; }
 
 /* ============================================
@@ -1568,7 +1568,7 @@ textarea { resize: vertical; min-height: 70px; }
     text-align: center;
     padding: 3.5rem 2rem;
     color: var(--text-mute);
-    font-size: .88rem;
+    font-size: 1rem;
     letter-spacing: .05em;
 }
 
@@ -1584,7 +1584,7 @@ textarea { resize: vertical; min-height: 70px; }
     border-left: 3px solid var(--green);
     padding: .8rem 1.15rem;
     border-radius: 4px;
-    font-size: .88rem;
+    font-size: 1rem;
     font-weight: 500;
     z-index: 999;
     opacity: 0;
@@ -1626,7 +1626,7 @@ textarea { resize: vertical; min-height: 70px; }
 }
 
 .footer-copy {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     color: var(--text-mute);
 }
 
