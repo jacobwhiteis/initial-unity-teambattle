@@ -116,6 +116,23 @@ async function registerCommands() {
     if (res.ok) {
       const data = await res.json();
       console.log(`  ✓ Registered (id: ${data.id})`);
+    } else if (res.status === 429) {
+      const data = JSON.parse(await res.text());
+      const wait = Math.ceil((data.retry_after || 3) * 1000);
+      console.log(`  ⏳ Rate limited, waiting ${wait}ms...`);
+      await new Promise(r => setTimeout(r, wait));
+      // Retry once
+      const retry = await fetch(url, {
+        method: 'POST',
+        headers: { Authorization: `Bot ${BOT_TOKEN}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(cmd),
+      });
+      if (retry.ok) {
+        const data = await retry.json();
+        console.log(`  ✓ Registered on retry (id: ${data.id})`);
+      } else {
+        console.error(`  ✗ Retry failed: ${retry.status} ${await retry.text()}`);
+      }
     } else {
       const err = await res.text();
       console.error(`  ✗ Failed: ${res.status} ${err}`);
