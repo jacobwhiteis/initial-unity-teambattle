@@ -1,10 +1,14 @@
-import { ephemeralMessage, getOption } from '../lib/discord.js';
+import { ephemeralMessage, getOption, getResolvedRole, removeRoleFromMember } from '../lib/discord.js';
 import { createFirestoreClient } from '../lib/firestore.js';
 
 const MAX_ROSTER_SIZE = 6;
 
 export async function handleRemoveDriver(interaction, env) {
-  const tag = getOption(interaction, 'team_tag').toUpperCase();
+  const role = getResolvedRole(interaction, 'team');
+  if (!role || !role.name) {
+    return ephemeralMessage('Could not resolve the team role. Please select a valid role.');
+  }
+  const tag = role.name.toUpperCase();
   const playerId = getOption(interaction, 'player');
   const invokerId = interaction.member.user.id;
 
@@ -41,7 +45,16 @@ export async function handleRemoveDriver(interaction, env) {
     db.buildDelete('drivers', playerId),
   ]);
 
+  let roleWarning = '';
+  try {
+    const removed = await removeRoleFromMember(env, interaction.guild_id, playerId, role.id);
+    if (!removed) roleWarning = '\n⚠️ Could not remove the Discord role. Please remove it manually.';
+  } catch (e) {
+    console.error('Failed to remove Discord role:', e);
+    roleWarning = '\n⚠️ Could not remove the Discord role. Please remove it manually.';
+  }
+
   return ephemeralMessage(
-    `Removed **${driver.name}** (<@${playerId}>) from **[${team.tag}] ${team.name}** (${newRoster.length}/${MAX_ROSTER_SIZE} drivers).`
+    `Removed **${driver.name}** (<@${playerId}>) from **[${team.tag}] ${team.name}** (${newRoster.length}/${MAX_ROSTER_SIZE} drivers).${roleWarning}`
   );
 }

@@ -1,4 +1,4 @@
-import { ephemeralMessage, getOption } from '../lib/discord.js';
+import { ephemeralMessage, getOption, getResolvedRole, addRoleToMember } from '../lib/discord.js';
 import { createFirestoreClient } from '../lib/firestore.js';
 
 const MAX_ROSTER_SIZE = 6;
@@ -8,7 +8,11 @@ const VALID_CARS = [
 ];
 
 export async function handleAddDriver(interaction, env) {
-  const tag = getOption(interaction, 'team_tag').toUpperCase();
+  const role = getResolvedRole(interaction, 'team');
+  if (!role || !role.name) {
+    return ephemeralMessage('Could not resolve the team role. Please select a valid role.');
+  }
+  const tag = role.name.toUpperCase();
   const playerId = getOption(interaction, 'player');
   const displayName = getOption(interaction, 'display_name');
   const car = (getOption(interaction, 'car') || '').toUpperCase();
@@ -70,7 +74,16 @@ export async function handleAddDriver(interaction, env) {
     db.buildUpdate('drivers', playerId, { name: displayName, car, teamId, teamTag: team.tag, teamName: team.name }),
   ]);
 
+  let roleWarning = '';
+  try {
+    const added = await addRoleToMember(env, interaction.guild_id, playerId, role.id);
+    if (!added) roleWarning = '\n⚠️ Could not assign the Discord role. Please assign it manually.';
+  } catch (e) {
+    console.error('Failed to add Discord role:', e);
+    roleWarning = '\n⚠️ Could not assign the Discord role. Please assign it manually.';
+  }
+
   return ephemeralMessage(
-    `Added **${displayName}** (<@${playerId}>) to **[${team.tag}] ${team.name}** (${newRoster.length}/${MAX_ROSTER_SIZE} drivers).`
+    `Added **${displayName}** (<@${playerId}>) to **[${team.tag}] ${team.name}** (${newRoster.length}/${MAX_ROSTER_SIZE} drivers).${roleWarning}`
   );
 }

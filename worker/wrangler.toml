@@ -8,5 +8,6 @@ FIREBASE_PROJECT_ID = "iur-teambattle"
 # Secrets (set via `npx wrangler secret put`):
 # DISCORD_PUBLIC_KEY
 # DISCORD_APP_ID
+# DISCORD_BOT_TOKEN
 # GOOGLE_SERVICE_ACCOUNT_EMAIL
 # GOOGLE_PRIVATE_KEY

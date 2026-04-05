@@ -6,9 +6,9 @@ export const ADD_TEAM_DRIVER = {
   description: 'Add a Discord user to a team roster',
   options: [
     {
-      name: 'team_tag',
-      description: 'Team tag (e.g. MTD, AKG)',
-      type: 3, // STRING
+      name: 'team',
+      description: 'Team role (e.g. @MTD)',
+      type: 8, // ROLE
       required: true,
     },
     {
@@ -57,9 +57,9 @@ export const REMOVE_TEAM_DRIVER = {
   description: 'Remove a Discord user from a team roster',
   options: [
     {
-      name: 'team_tag',
-      description: 'Team tag (e.g. MTD, AKG)',
-      type: 3, // STRING
+      name: 'team',
+      description: 'Team role (e.g. @MTD)',
+      type: 8, // ROLE
       required: true,
     },
     {

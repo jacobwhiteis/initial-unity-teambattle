@@ -48,3 +48,37 @@ export function getOption(interaction, name) {
   const opt = interaction.data.options?.find(o => o.name === name);
   return opt?.value ?? null;
 }
+
+/** Resolve a role from an interaction option. Returns { id, name, ... } or null. */
+export function getResolvedRole(interaction, optionName) {
+  const roleId = getOption(interaction, optionName);
+  if (!roleId) return null;
+  return {
+    id: roleId,
+    ...interaction.data.resolved?.roles?.[roleId],
+  };
+}
+
+/** Add a Discord role to a guild member. Returns true on success. */
+export async function addRoleToMember(env, guildId, userId, roleId) {
+  const res = await fetch(
+    `https://discord.com/api/v10/guilds/${guildId}/members/${userId}/roles/${roleId}`,
+    {
+      method: 'PUT',
+      headers: { Authorization: `Bot ${env.DISCORD_BOT_TOKEN}` },
+    }
+  );
+  return res.status === 204;
+}
+
+/** Remove a Discord role from a guild member. Returns true on success. */
+export async function removeRoleFromMember(env, guildId, userId, roleId) {
+  const res = await fetch(
+    `https://discord.com/api/v10/guilds/${guildId}/members/${userId}/roles/${roleId}`,
+    {
+      method: 'DELETE',
+      headers: { Authorization: `Bot ${env.DISCORD_BOT_TOKEN}` },
+    }
+  );
+  return res.status === 204;
+}

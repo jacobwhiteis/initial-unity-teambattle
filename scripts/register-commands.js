@@ -20,7 +20,7 @@ const commands = [
     name: 'add-team-driver',
     description: 'Add a Discord user to a team roster',
     options: [
-      { name: 'team_tag', description: 'Team tag (e.g. MTD, AKG)', type: 3, required: true },
+      { name: 'team', description: 'Team role (e.g. @MTD)', type: 8, required: true },
       { name: 'player', description: 'Discord user to add', type: 6, required: true },
       { name: 'display_name', description: "Player's display name for the roster", type: 3, required: true },
       { name: 'car', description: "Player's car (e.g. AE86, FD3S)", type: 3, required: true, choices: [
@@ -37,7 +37,7 @@ const commands = [
     name: 'remove-team-driver',
     description: 'Remove a Discord user from a team roster',
     options: [
-      { name: 'team_tag', description: 'Team tag (e.g. MTD, AKG)', type: 3, required: true },
+      { name: 'team', description: 'Team role (e.g. @MTD)', type: 8, required: true },
       { name: 'player', description: 'Discord user to remove', type: 6, required: true },
     ],
   },
