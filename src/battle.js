@@ -168,7 +168,7 @@ function render() {
     if (crpResult) crpResult.style.display = 'none';
 
     // Show ban/pick banner if session is in a ban/pick phase
-    const isBanpickActive = sessionData && !['RACING', 'COMPLETE'].includes(sessionData.phase);
+    const isBanpickActive = sessionData && !['RACING', 'DECIDER', 'COMPLETE'].includes(sessionData.phase);
     if (banpickBanner) {
       if (isBanpickActive) {
         const url = `${window.location.origin}/banpick?join=${matchData.banpickSessionId}`;
