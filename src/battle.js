@@ -271,7 +271,7 @@ async function addMapsForRound(round) {
         const pickMap = MAPS.find(m => m.id === pickId);
         mapsMsg += `\nMap ${3 + i}: **${pickMap?.name}** (Pick)`;
       });
-      postToDiscord(threadId, mapsMsg);
+      await postToDiscord(threadId, mapsMsg);
       postToDiscord(threadId, `🏁 **Time to race!** First up: **${homeAMap?.name}** (Map 1)`);
     }
   } catch (e) {
@@ -303,7 +303,7 @@ async function addDeciderMap() {
     });
 
     const threadId = matchData.discordThreadId || null;
-    postToDiscord(threadId, `🗺️ **Decider Map:** Map ${updatedResults.length}: **${deciderMap?.name}**`);
+    await postToDiscord(threadId, `🗺️ **Decider Map:** Map ${updatedResults.length}: **${deciderMap?.name}**`);
     postToDiscord(threadId, `🏁 **Time to race!** Decider: **${deciderMap?.name}** (Map ${updatedResults.length})`);
   } catch (e) {
     console.error('Failed to add decider map:', e);
@@ -509,12 +509,12 @@ async function recordRaceResult(mapIdx, raceType, teamId) {
   const mapName = map.mapName;
 
   // Race result message
-  postToDiscord(threadId, raceResultMessage(mapName, raceType, teamName));
+  await postToDiscord(threadId, raceResultMessage(mapName, raceType, teamName));
 
   // If map winner just determined, post that too and check for ban/pick resumption
   if (map.mapWinner && !matchData.mapResults[mapIdx].mapWinner) {
     const mapWinnerName = map.mapWinner === matchData.teamA ? matchData.teamAName : matchData.teamBName;
-    postToDiscord(threadId, mapWinnerMessage(
+    await postToDiscord(threadId, mapWinnerMessage(
       mapIdx + 1, mapName, mapWinnerName,
       liveScore.teamA, liveScore.teamB,
       matchData.teamAName, matchData.teamBName
