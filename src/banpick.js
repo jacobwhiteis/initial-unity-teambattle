@@ -335,14 +335,6 @@ function getFirstPicker(score, teamAHigherRank) {
     return teamAHigherRank ? 'B' : 'A';
 }
 
-function getFirstBanner(score, teamAHigherRank) {
-    // Winning team bans first (disadvantage). If tied, higher-ranked bans first (disadvantage).
-    if (score.teamA > score.teamB) return 'A';
-    if (score.teamB > score.teamA) return 'B';
-    // Tied: higher-ranked bans first (disadvantage)
-    return teamAHigherRank ? 'A' : 'B';
-}
-
 async function handleMapClick(mapId) {
     // Only Active Roles
     if (playerRole === ROLES.SPECTATOR) return;
@@ -437,8 +429,8 @@ async function handleMapClick(mapId) {
 function getNextBanPhase(banningTeam, predictedBans, state, format, round, score) {
     const picks = state.picks || [];
 
-    // BO5 round 2: 4 secondary bans, then transition to PICK_MAP
-    if (format === 'BO5' && round === 2) {
+    // BO5 secondary bans: round 2 for live battles, round 1 for standalone sessions
+    if (format === 'BO5' && (round === 2 || (round === 1 && !state.matchId))) {
         if (predictedBans.length >= 4) {
             const firstPicker = getFirstPicker(score, state.teamAHigherRank);
             return firstPicker === 'A' ? PHASE.PICK_MAP_A : PHASE.PICK_MAP_B;

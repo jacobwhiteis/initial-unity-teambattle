@@ -343,7 +343,12 @@ async function resumeBanpick(nextRound, firstBanPhase) {
     // Notify Discord
     const threadId = matchData.discordThreadId || null;
     const url = `${window.location.origin}/banpick?join=${matchData.banpickSessionId}`;
-    await postToDiscord(threadId, `🗺️ **Score tied ${score.teamA}\u2013${score.teamB}!** Returning to ban phase for the decider map.\n${url}`);
+    const format = matchData.format || 'BO3';
+    if (format === 'BO5' && nextRound === 2) {
+      await postToDiscord(threadId, `🗺️ **Score: ${score.teamA}\u2013${score.teamB}.** Returning to ban/pick for secondary maps.\n${url}`);
+    } else {
+      await postToDiscord(threadId, `🗺️ **Score tied ${score.teamA}\u2013${score.teamB}!** Returning to ban phase for the decider map.\n${url}`);
+    }
   } catch (e) {
     console.error('Failed to resume ban/pick:', e);
     toast('Failed to resume ban/pick', true);
