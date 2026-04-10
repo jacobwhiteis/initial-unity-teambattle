@@ -27,11 +27,11 @@ export function getTier(pos) {
 // ---------------------------------------------------------------------------
 
 export const POS_RULES = {
-  1:  { win: 32, loss: 22, home: 8, streak: 12, format: "BO5" },
-  2:  { win: 25, loss: 16, home: 6, streak: 12, format: "BO5" },
-  3:  { win: 20, loss: 12, home: 6, streak: 12, format: "BO5" },
-  4:  { win: 15, loss: 9,  home: 5, streak: 12, format: "BO5" },
-  5:  { win: 10, loss: 7,  home: 4, streak: 12, format: "BO3" },
+  1:  { win: 32, loss: 11, home: 8, streak: 12, format: "BO5" },
+  2:  { win: 25, loss: 8,  home: 6, streak: 12, format: "BO5" },
+  3:  { win: 20, loss: 6,  home: 6, streak: 12, format: "BO5" },
+  4:  { win: 15, loss: 5,  home: 5, streak: 12, format: "BO5" },
+  5:  { win: 10, loss: 4,  home: 4, streak: 12, format: "BO3" },
   6:  { win: 8,  loss: 5,  home: 4, streak: 8,  format: "BO3" },
   7:  { win: 6,  loss: 4,  home: 3, streak: 8,  format: "BO3" },
   8:  { win: 6,  loss: 4,  home: 3, streak: 8,  format: "BO3" },

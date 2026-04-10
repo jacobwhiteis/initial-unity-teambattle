@@ -776,6 +776,9 @@ function deleteTeamAction() {
   const batch = writeBatch(db);
   batch.delete(doc(db, 'teams', teamId));
   batch.delete(doc(db, 'standings', teamId));
+  for (const driver of (team.roster || [])) {
+    if (driver.discordId) batch.delete(doc(db, 'drivers', driver.discordId));
+  }
   batch.commit()
     .then(() => { toast('Team deleted'); document.getElementById('del-team-confirm').value = ''; })
     .catch(e => toast('Delete failed: ' + e.message, true));
