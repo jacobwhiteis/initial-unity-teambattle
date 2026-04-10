@@ -198,13 +198,15 @@ function initDashboard() {
   document.getElementById('saveWebhookBtn').addEventListener('click', saveWebhook);
   loadWebhookConfig();
 
-  // CRP override (admin only)
+  // CRP / position override (admin only)
   document.getElementById('setCrpBtn').addEventListener('click', setCrpOverride);
+  document.getElementById('setPositionBtn').addEventListener('click', setPositionOverride);
 
   // Danger zone
   delTeamBtn.addEventListener('click', deleteTeamAction);
   delMatchBtn.addEventListener('click', deleteMatchAction);
   document.getElementById('delDriverBtn').addEventListener('click', deleteDriverAction);
+  document.getElementById('resetSeasonBtn').addEventListener('click', resetSeasonAction);
 
   // Invite system (admin only)
   document.getElementById('genInviteBtn').addEventListener('click', generateInvite);
@@ -585,6 +587,49 @@ async function setCrpOverride() {
     toast(`CRP set to ${crp}`);
   } catch (e) {
     toast('Failed to set CRP: ' + e.message, true);
+  }
+}
+
+async function setPositionOverride() {
+  if (staffRole !== 'admin') { toast('Admin access required', true); return; }
+  const teamId = document.getElementById('t-editing').value;
+  if (!teamId) { toast('Select a team to edit first', true); return; }
+  const position = parseInt(document.getElementById('t-position').value);
+  if (isNaN(position) || position < 1) { toast('Enter a valid position (1 or higher)', true); return; }
+  try {
+    await updateDoc(doc(db, 'standings', teamId), { position, rank: position });
+    toast(`Position set to #${position}`);
+  } catch (e) {
+    toast('Failed to set position: ' + e.message, true);
+  }
+}
+
+async function resetSeasonAction() {
+  if (staffRole !== 'admin') { toast('Admin access required', true); return; }
+  const confirm = document.getElementById('reset-season-confirm').value.trim();
+  if (confirm !== 'RESET SEASON') { toast('Type "RESET SEASON" to confirm', true); return; }
+
+  try {
+    const snap = await getDocs(collection(db, 'standings'));
+    const batch = writeBatch(db);
+    snap.forEach(d => {
+      batch.update(doc(db, 'standings', d.id), {
+        crp: 0,
+        wins: 0,
+        losses: 0,
+        winRate: 0,
+        streak: 0,
+        consecutive_wins: 0,
+        mapWins: 0,
+        mapLosses: 0,
+        match_history: [],
+      });
+    });
+    await batch.commit();
+    toast('Season reset — all stats cleared');
+    document.getElementById('reset-season-confirm').value = '';
+  } catch (e) {
+    toast('Reset failed: ' + e.message, true);
   }
 }
 

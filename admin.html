@@ -112,10 +112,15 @@
                                 </div>
                             </div>
                             <div class="form-group" id="t-crp-group" style="display:none;">
-                                <label for="t-crp">CRP (Admin Override)</label>
-                                <div style="display:flex;gap:.5rem;align-items:end;">
+                                <label>CRP (Admin Override)</label>
+                                <div style="display:flex;gap:.5rem;align-items:end;margin-bottom:.5rem;">
                                     <input type="number" id="t-crp" placeholder="CRP value" style="width:140px;">
                                     <button class="btn btn-danger btn-sm" id="setCrpBtn" type="button">Set CRP</button>
+                                </div>
+                                <label>Position (Admin Override)</label>
+                                <div style="display:flex;gap:.5rem;align-items:end;">
+                                    <input type="number" id="t-position" placeholder="Position" min="1" style="width:140px;">
+                                    <button class="btn btn-danger btn-sm" id="setPositionBtn" type="button">Set Position</button>
                                 </div>
                             </div>
                             <input type="hidden" id="t-editing">
@@ -360,6 +365,18 @@
                             </div>
                             <div class="form-actions">
                                 <button class="btn btn-danger" id="delDriverBtn">Delete Driver</button>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h4>Reset Season</h4>
+                            <div class="info-box">Resets all team stats to zero while preserving the current ladder order. Clears CRP, wins, losses, streaks, map stats, and match history for every team.</div>
+                            <div class="form-group">
+                                <label for="reset-season-confirm">Type RESET SEASON to confirm</label>
+                                <input type="text" id="reset-season-confirm" placeholder="RESET SEASON">
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn btn-danger" id="resetSeasonBtn">Reset Season</button>
                             </div>
                         </div>
 
