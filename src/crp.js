@@ -104,15 +104,13 @@ export function calcCRP(winner, loser, homeFor) {
   const winnerBase = loserRules.win;
   const loserBase = winnerRules.loss;
 
-  // Home bonus -- each side uses the opponent's home value
+  // Home bonus -- winner earns the loser's home value only if they beat the
+  // loser on the loser's home map. Losers never earn a home bonus.
   let winnerHome = 0;
-  let loserHome = 0;
+  const loserHome = 0;
 
-  if (homeFor === "winner" || homeFor === "both") {
-    winnerHome = loserRules.home;
-  }
   if (homeFor === "loser" || homeFor === "both") {
-    loserHome = winnerRules.home;
+    winnerHome = loserRules.home;
   }
 
   // Streak bonus -- every 4th consecutive win for the winner
