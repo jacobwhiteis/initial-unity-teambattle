@@ -2,7 +2,6 @@
  * CRP (Competition Rating Points) Calculation Engine
  *
  * Pure utility module -- no DOM or Firebase dependencies.
- * Ported from the PoC in league_interface.html.
  */
 
 // ---------------------------------------------------------------------------
@@ -27,12 +26,12 @@ export function getTier(pos) {
 // ---------------------------------------------------------------------------
 
 export const POS_RULES = {
-  1:  { win: 32, loss: 11, home: 8, streak: 12, format: "BO5" },
-  2:  { win: 25, loss: 8,  home: 6, streak: 12, format: "BO5" },
-  3:  { win: 20, loss: 6,  home: 6, streak: 12, format: "BO5" },
-  4:  { win: 15, loss: 5,  home: 5, streak: 12, format: "BO5" },
-  5:  { win: 10, loss: 4,  home: 4, streak: 12, format: "BO3" },
-  6:  { win: 8,  loss: 5,  home: 4, streak: 8,  format: "BO3" },
+  1:  { win: 32, loss: 18, home: 7, streak: 12, format: "BO5" },
+  2:  { win: 27, loss: 14,  home: 6, streak: 12, format: "BO5" },
+  3:  { win: 22, loss: 10,  home: 6, streak: 12, format: "BO5" },
+  4:  { win: 17, loss: 8,  home: 5, streak: 12, format: "BO5" },
+  5:  { win: 15, loss: 7,  home: 5, streak: 12, format: "BO3" },
+  6:  { win: 10,  loss: 6,  home: 4, streak: 8,  format: "BO3" },
   7:  { win: 6,  loss: 4,  home: 3, streak: 8,  format: "BO3" },
   8:  { win: 6,  loss: 4,  home: 3, streak: 8,  format: "BO3" },
   9:  { win: 6,  loss: 4,  home: 3, streak: 8,  format: "BO3" },
