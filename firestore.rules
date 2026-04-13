@@ -57,8 +57,9 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isStaff()
-        && get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.role == 'admin';
+      // TEMP: Moderators treated as admins (incl. danger zone / invites / config).
+      // See CLAUDE.md "Temporary overrides". Revert before public launch.
+      return isStaff();
     }
   }
 }

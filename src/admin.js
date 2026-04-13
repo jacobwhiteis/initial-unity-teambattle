@@ -69,6 +69,8 @@ async function checkStaffAccess(user, showInviteOnFail) {
     const staffDoc = await Promise.race([staffPromise, timeout]);
     if (staffDoc.exists()) {
       staffRole = staffDoc.data().role || 'moderator';
+      // TEMP: Grant moderators full admin access (incl. danger zone). See CLAUDE.md "Temporary overrides". Revert before public launch.
+      if (staffRole === 'moderator') staffRole = 'admin';
       let displayName = staffDoc.data().discordUsername;
       // Auto-fix "Unknown" display names from Discord provider data
       if (!displayName || displayName === 'Unknown') {

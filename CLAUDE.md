@@ -2,6 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## ⚠️ Temporary overrides (revert before public launch)
+
+- **Moderators have full admin access, including the danger zone.** Implemented in two places:
+  - `src/admin.js` (inside `checkStaffAccess`) — auto-promotes `staffRole` from `moderator` to `admin` on login.
+  - `firestore.rules` — `isAdmin()` currently returns `isStaff()`, so any staff member (moderator or admin) passes admin-gated rules (config writes, staff update/delete, invite create/delete).
+- Revert both changes before public launch. Remind the user at the start of each session.
+
 ## Project Overview
 
 Competitive team battle hub for **Initial Unity Reborn**, a fan-made racing game inspired by Initial D. This site tracks team standings, match results, and CRP (Competition Rating Points) rankings for organized head-to-head team battles.
