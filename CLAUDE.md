@@ -82,8 +82,7 @@ See `src/crp.js` for the full calculation logic and `POS_RULES` table.
 
 - Discord OAuth via Firebase Auth (`oidc.discord` provider)
 - Staff verified against `staff` collection on login
-- Invite code system: admins generate codes, new staff redeem on first login
-- **Permanent moderator invite code: `MODTEAM2026`** (reusable, stored in Firestore `invites/MODTEAM2026`). This is temporary and should be removed before public launch — remind the user at the start of each session.
+- Invite code system: admins generate codes, new staff redeem on first login (single-use only)
 - Roles: `admin` (full access including danger zone + invites), `moderator` (teams, drivers, match logging)
 
 ### Discord Bot (Cloudflare Worker)
