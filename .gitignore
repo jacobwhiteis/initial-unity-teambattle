@@ -1,6 +1,10 @@
 node_modules/
 dist/
 .vite/
+.wrangler/
 .env
 .env.local
+*.local
 *.log
+.DS_Store
+docs/
