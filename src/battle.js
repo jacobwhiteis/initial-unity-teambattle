@@ -722,8 +722,12 @@ async function doFinalize(winnerId) {
   const winnerName = winnerId === matchData.teamA ? matchData.teamAName : matchData.teamBName;
   const loserName = winnerId === matchData.teamA ? matchData.teamBName : matchData.teamAName;
 
-  // Both teams play on each other's home maps
-  const homeFor = 'both';
+  // Home bonus is only earned when the winner takes the loser's first home
+  // map pick (home_a / home_b). Secondary picks (BO5 round 2) are not home
+  // maps and never trigger the bonus.
+  const loserHomeType = loserId === matchData.teamA ? 'home_a' : 'home_b';
+  const loserHomeMap = (matchData.mapResults || []).find(m => m.type === loserHomeType);
+  const homeFor = loserHomeMap?.mapWinner === winnerId ? 'loser' : 'none';
 
   // Load standings for finalization
   const standingsSnap = await getDocs(query(collection(db, 'standings'), orderBy('rank', 'asc')));

@@ -26,14 +26,14 @@ export function getTier(pos) {
 // ---------------------------------------------------------------------------
 
 export const POS_RULES = {
-  1:  { win: 32, loss: 18, home: 7, streak: 12, format: "BO5" },
-  2:  { win: 27, loss: 14,  home: 6, streak: 12, format: "BO5" },
+  1:  { win: 32, loss: 16, home: 7, streak: 12, format: "BO5" },
+  2:  { win: 27, loss: 13,  home: 6, streak: 12, format: "BO5" },
   3:  { win: 22, loss: 10,  home: 6, streak: 12, format: "BO5" },
-  4:  { win: 17, loss: 8,  home: 5, streak: 12, format: "BO5" },
-  5:  { win: 15, loss: 7,  home: 5, streak: 12, format: "BO3" },
-  6:  { win: 10,  loss: 6,  home: 4, streak: 8,  format: "BO3" },
-  7:  { win: 6,  loss: 4,  home: 3, streak: 8,  format: "BO3" },
-  8:  { win: 6,  loss: 4,  home: 3, streak: 8,  format: "BO3" },
+  4:  { win: 17, loss: 7,  home: 5, streak: 12, format: "BO5" },
+  5:  { win: 15, loss: 6,  home: 5, streak: 12, format: "BO3" },
+  6:  { win: 10,  loss: 4,  home: 4, streak: 8,  format: "BO3" },
+  7:  { win: 6,  loss: 2,  home: 3, streak: 8,  format: "BO3" },
+  8:  { win: 6,  loss: 2,  home: 3, streak: 8,  format: "BO3" },
   9:  { win: 6,  loss: 4,  home: 3, streak: 8,  format: "BO3" },
   10: { win: 5,  loss: 4,  home: 3, streak: 8,  format: "BO3" },
   11: { win: 4,  loss: 3,  home: 3, streak: 6,  format: "BO3" },
