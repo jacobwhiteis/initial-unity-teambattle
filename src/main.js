@@ -1,6 +1,6 @@
 import './nav.js';
 import { db, collection, query, orderBy, limit, onSnapshot } from './firebase.js';
-import { getTier, getRules } from './crp.js';
+import { getTier, getTierClass, getRules } from './crp.js';
 
 // ---------------------------------------------------------------------------
 // DOM Elements
@@ -113,7 +113,7 @@ function renderBoard(teams, mode) {
         <div><span class="tag-badge">${team.teamTag || ''}</span><span class="team-name">${team.teamName || team.name || ''}</span></div>
         ${driverPreview ? `<div class="team-sub">${driverPreview}</div>` : ''}
       </td>
-      <td class="c"><span class="tier-badge tier-${tier}">${tier}</span></td>
+      <td class="c"><span class="tier-badge tier-${getTierClass(team.position)}">${tier}</span></td>
       <td class="c"><span class="wl-cell"><span class="w">${team.wins || 0}</span><span class="s">/</span><span class="l">${team.losses || 0}</span></span></td>
       <td class="c">${streakHtml}</td>
       <td class="r"><span class="crp-val">${team.crp || 0}</span></td>

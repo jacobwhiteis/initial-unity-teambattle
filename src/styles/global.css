@@ -753,10 +753,10 @@ td.c { text-align: center; }
     vertical-align: middle;
 }
 
-.tier-Adept        { background: rgba(200,146,42,.2);   color: #d4a035; border: 1px solid rgba(200,146,42,.35); }
-.tier-Proficient   { background: rgba(80,140,200,.2);   color: #6aaad4; border: 1px solid rgba(80,140,200,.35); }
-.tier-Intermediate { background: rgba(100,170,100,.2);  color: #7aba7a; border: 1px solid rgba(100,170,100,.35); }
-.tier-Novice       { background: rgba(160,120,80,.2);   color: #b8906a; border: 1px solid rgba(160,120,80,.35); }
+.tier-Elite        { background: rgba(200,146,42,.2);   color: #d4a035; border: 1px solid rgba(200,146,42,.35); }
+.tier-Division1    { background: rgba(80,140,200,.2);   color: #6aaad4; border: 1px solid rgba(80,140,200,.35); }
+.tier-Division2    { background: rgba(100,170,100,.2);  color: #7aba7a; border: 1px solid rgba(100,170,100,.35); }
+.tier-Division3    { background: rgba(160,120,80,.2);   color: #b8906a; border: 1px solid rgba(160,120,80,.35); }
 .tier-Unranked     { background: rgba(100,100,100,.2);  color: #888;    border: 1px solid rgba(120,120,120,.3); }
 
 /* ============================================

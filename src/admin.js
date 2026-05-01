@@ -329,7 +329,8 @@ function refreshDriverList() {
 
 const CAR_LIST = [
   'AE86','FD3S','RPS13','BNR32','CE9A','EG6','SW20','FC3S',
-  'AP1','NA6CE','NA1','GC8F','DC2','JZA80','S14','ZZW30','EA11R','CN9A'
+  'AP1','NA6CE','NA1','GC8F','DC2','JZA80','S14','ZZW30','EA11R','CN9A',
+  'S15','AE86-E','BNR34'
 ];
 const MAX_TEAM_STAFF = 2;
 
@@ -989,8 +990,8 @@ async function loadBattles() {
   if (active.length) {
     activeEl.innerHTML = active.map(b => {
       const statusBadge = b.status === 'banpick'
-        ? '<span class="tier-badge tier-Proficient">Ban/Pick</span>'
-        : '<span class="tier-badge tier-Adept">In Progress</span>';
+        ? '<span class="tier-badge tier-Division1">Ban/Pick</span>'
+        : '<span class="tier-badge tier-Elite">In Progress</span>';
       return `<div class="mod-list-item">
         ${statusBadge}
         <span class="ml-name">${b.teamAName} [${b.teamATag || ''}] vs ${b.teamBName} [${b.teamBTag || ''}]</span>

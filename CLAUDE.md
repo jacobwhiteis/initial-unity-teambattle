@@ -47,7 +47,7 @@ All HTML entry points are defined in `vite.config.js` under `build.rollupOptions
 - `src/admin.js` — Staff dashboard: Discord OAuth auth flow, role-based access (admin/moderator), team CRUD, driver CRUD, match logging with CRP, live battle creation with banpick session generation, invite code system, webhook config, danger zone (admin-only).
 - `src/battle.js` — Live battle page: real-time match state via onSnapshot, banpick→in_progress auto-transition, map result editing with undo, auto-advance (map winners, series winner detection), finalization with CRP, Discord webhook updates.
 - `src/banpick.js` — Map ban/pick session manager (migrated from main site). Firestore real-time sync, phase state machine (WAITING → PICK_HOME_A → PICK_HOME_B → BAN_A ↔ BAN_B → DECIDER).
-- `src/crp.js` — CRP calculation engine (pure utility, no DOM/Firebase). Exports: `getTier`, `getRules`, `calcCRP`, `POS_RULES`, `NOVICE_RULES`.
+- `src/crp.js` — CRP calculation engine (pure utility, no DOM/Firebase). Exports: `getTier`, `getTierClass`, `getRules`, `calcCRP`, `POS_RULES`, `DIVISION3_RULES`.
 - `src/finalize.js` — Shared match finalization module. CRP calculation + standings updates + position swaps in a single writeBatch. Used by both admin quick-log and live battle page.
 - `src/discord.js` — Discord webhook utility. Posts formatted messages to channels/threads. Pre-built helpers for battle events (created, maps selected, race results, finalized).
 - `src/firebase.js` — Firebase init, Firestore + Auth exports. Project: `iur-teambattle`.
@@ -58,13 +58,13 @@ All HTML entry points are defined in `vite.config.js` under `build.rollupOptions
 
 ### CRP (Competition Rating Points) System
 
-Teams earn CRP per match based on the **opponent's** position/tier:
+Teams earn CRP per match based on the **opponent's** position/division:
 - Winner gets the loser's position-based `win` value; loser gets the winner's `loss` value
 - Home map bonus and streak bonus (every 4th consecutive win) add extra CRP
-- CRP values scale with position: #1 win = 32 pts, unranked = 2 pts
-- Tiers: Adept (pos 1-5), Proficient (6-10), Intermediate (11-15), Novice (16+), Unranked
+- CRP values scale with position: #1 win = 32 pts, Division 3 = 2 pts
+- Divisions: Elite (pos 1-5), Division 1 (6-10), Division 2 (11-15), Division 3 (16+, unbounded), Unranked (no matches yet)
 
-Position swaps: if a lower-ranked team beats a higher-ranked team, the winner takes the loser's position; intermediate teams shift down by 1.
+Position swaps: if a lower-ranked team beats a higher-ranked team, the winner takes the loser's position; teams between shift down by 1.
 
 See `src/crp.js` for the full calculation logic and `POS_RULES` table.
 
@@ -87,9 +87,11 @@ See `src/crp.js` for the full calculation logic and `POS_RULES` table.
 
 ### Discord Bot (Cloudflare Worker)
 
-A Cloudflare Worker at `worker/` handles Discord slash commands for driver management:
+A Cloudflare Worker at `worker/` handles Discord slash commands for team and driver management:
 
 **Staff-only (write):**
+- `/create-team @team_role [tag]` — creates a new team doc + standing linked to a Discord role
+- `/link-team @team_role [team_tag]` — links an existing Discord role to an existing team
 - `/add-team-driver @team_role @player [display_name] [car]` — adds a Discord user to a team roster and assigns the team's Discord role
 - `/remove-team-driver @team_role @player` — removes a Discord user from a roster and removes the team's Discord role
 - `/change-car @player [car]` — changes a driver's car
@@ -98,9 +100,9 @@ A Cloudflare Worker at `worker/` handles Discord slash commands for driver manag
 - `/view-team [team_tag]` — view a team's info, roster, and record
 - `/view-driver @player` — view a driver's team and car
 - `/view-team-history [team_tag]` — view a team's match history
-- `/standings` — view the team battle standings
+- `/standings` — view the team battle standings (ranked + unranked sections)
 
-Staff verified via `discordId` field on `staff` collection. New drivers must be added via bot (links Discord ID); admin dashboard can edit name/role and remove existing drivers. Car choices: AE86, FD3S, RPS13, BNR32, CE9A, EG6, SW20, FC3S, AP1, NA6CE, NA1, GC8F, DC2, JZA80, S14, ZZW30, EA11R, CN9A.
+Staff verified via `discordId` field on `staff` collection. New drivers must be added via bot (links Discord ID); admin dashboard can edit name/role and remove existing drivers. Car choices: AE86, FD3S, RPS13, BNR32, CE9A, EG6, SW20, FC3S, AP1, NA6CE, NA1, GC8F, DC2, JZA80, S14, ZZW30, EA11R, CN9A, S15, AE86-E, BNR34.
 
 ```bash
 cd worker

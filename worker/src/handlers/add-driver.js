@@ -4,7 +4,8 @@ import { createFirestoreClient } from '../lib/firestore.js';
 const MAX_ROSTER_SIZE = 8;
 const VALID_CARS = [
   'AE86','FD3S','RPS13','BNR32','CE9A','EG6','SW20','FC3S',
-  'AP1','NA6CE','NA1','GC8F','DC2','JZA80','S14','ZZW30','EA11R','CN9A'
+  'AP1','NA6CE','NA1','GC8F','DC2','JZA80','S14','ZZW30','EA11R','CN9A',
+  'S15','AE86-E','BNR34'
 ];
 
 export async function handleAddDriver(interaction, env) {

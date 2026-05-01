@@ -1,6 +1,6 @@
 import './nav.js';
 import { db, collection, doc, getDoc, getDocs, query, orderBy, where } from './firebase.js';
-import { getTier } from './crp.js';
+import { getTier, getTierClass } from './crp.js';
 
 const teamTitle = document.getElementById('teamTitle');
 const teamStats = document.getElementById('teamStats');
@@ -68,7 +68,7 @@ async function loadTeam() {
             <span class="profile-stat-label">Position</span>
           </div>
           <div class="profile-stat profile-stat-tier">
-            <span class="profile-stat-value"><span class="tier-badge tier-${tier}">${tier}</span></span>
+            <span class="profile-stat-value"><span class="tier-badge tier-${getTierClass(standings?.position)}">${tier}</span></span>
             <span class="profile-stat-label">Tier</span>
           </div>
           <div class="profile-stat profile-stat-crp">

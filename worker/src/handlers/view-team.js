@@ -3,10 +3,10 @@ import { createFirestoreClient } from '../lib/firestore.js';
 
 function getTier(pos) {
   if (pos == null) return 'Unranked';
-  if (pos >= 1 && pos <= 5) return 'Adept';
-  if (pos >= 6 && pos <= 10) return 'Proficient';
-  if (pos >= 11 && pos <= 15) return 'Intermediate';
-  return 'Novice';
+  if (pos >= 1 && pos <= 5) return 'Elite';
+  if (pos >= 6 && pos <= 10) return 'Division 1';
+  if (pos >= 11 && pos <= 15) return 'Division 2';
+  return 'Division 3';
 }
 
 export async function handleViewTeam(interaction, env) {

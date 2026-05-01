@@ -9,16 +9,26 @@
 // ---------------------------------------------------------------------------
 
 /**
- * Returns a tier label based on ladder position.
+ * Returns a division label based on ladder position.
  * @param {number|null} pos - Ladder position (1-based), or null for unranked.
  * @returns {string}
  */
 export function getTier(pos) {
   if (pos == null) return "Unranked";
-  if (pos >= 1 && pos <= 5) return "Adept";
-  if (pos >= 6 && pos <= 10) return "Proficient";
-  if (pos >= 11 && pos <= 15) return "Intermediate";
-  return "Novice";
+  if (pos >= 1 && pos <= 5) return "Elite";
+  if (pos >= 6 && pos <= 10) return "Division 1";
+  if (pos >= 11 && pos <= 15) return "Division 2";
+  return "Division 3";
+}
+
+/**
+ * CSS-safe slug of the division label (spaces stripped).
+ * Used to build class names like `tier-Division1`.
+ * @param {number|null} pos
+ * @returns {string}
+ */
+export function getTierClass(pos) {
+  return getTier(pos).replace(/\s+/g, "");
 }
 
 // ---------------------------------------------------------------------------
@@ -43,7 +53,7 @@ export const POS_RULES = {
   15: { win: 3,  loss: 2,  home: 2, streak: 6,  format: "BO3" },
 };
 
-export const NOVICE_RULES = { win: 2, loss: 1, home: 2, streak: 4, format: "BO3" };
+export const DIVISION3_RULES = { win: 2, loss: 1, home: 2, streak: 4, format: "BO3" };
 
 // ---------------------------------------------------------------------------
 // Rule look-up
@@ -51,7 +61,7 @@ export const NOVICE_RULES = { win: 2, loss: 1, home: 2, streak: 4, format: "BO3"
 
 /**
  * Returns the CRP rules object for the given ladder position.
- * Falls back to NOVICE_RULES for positions outside POS_RULES.
+ * Falls back to DIVISION3_RULES for positions outside POS_RULES.
  * @param {number|null} pos
  * @returns {{ win: number, loss: number, home: number, streak: number, format: string }}
  */
@@ -59,7 +69,7 @@ export function getRules(pos) {
   if (pos != null && POS_RULES[pos]) {
     return POS_RULES[pos];
   }
-  return NOVICE_RULES;
+  return DIVISION3_RULES;
 }
 
 // ---------------------------------------------------------------------------
