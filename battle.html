@@ -54,6 +54,7 @@
         .badge-banpick { background: rgba(80,140,200,.2); color: #6aaad4; border: 1px solid rgba(80,140,200,.35); }
         .badge-live { background: rgba(200,146,42,.2); color: #d4a035; border: 1px solid rgba(200,146,42,.35); }
         .badge-completed { background: rgba(60,179,113,.2); color: var(--win); border: 1px solid rgba(60,179,113,.35); }
+        .badge-canceled { background: rgba(232,64,64,.18); color: var(--loss); border: 1px solid rgba(232,64,64,.35); }
 
         /* Banpick waiting state */
         .banpick-state {
@@ -259,6 +260,15 @@
             <span class="battle-team-name" id="teamBName">—</span>
         </div>
         <div class="battle-status" id="battleStatus"></div>
+        <div id="staffActions" style="display:none;margin-top:1rem;">
+            <button class="btn btn-danger btn-sm" id="cancelMatchBtn">Cancel Match</button>
+        </div>
+    </div>
+
+    <!-- Canceled state -->
+    <div id="canceledState" style="display:none;text-align:center;padding:3rem 1.5rem;max-width:800px;margin:0 auto;">
+        <p style="color:var(--loss);font-family:var(--font-condensed);font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:1.05rem;">This match was canceled.</p>
+        <p id="canceledReason" style="color:var(--text-mute);margin-top:.5rem;font-size:.88rem;"></p>
     </div>
 
     <!-- Banpick waiting state (shown when status=banpick) -->

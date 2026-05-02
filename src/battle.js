@@ -4,7 +4,7 @@ import {
   updateDoc, writeBatch, Timestamp, onAuthStateChanged
 } from './firebase.js';
 import { finalizeMatch } from './finalize.js';
-import { postToDiscord, raceResultMessage, mapWinnerMessage, matchFinalizedMessage, banpickCompleteMessage } from './discord.js';
+import { postToDiscord, raceResultMessage, mapWinnerMessage, matchFinalizedMessage, banpickCompleteMessage, matchCanceledMessage } from './discord.js';
 
 // --- MAPS (same as banpick) ---
 
@@ -83,6 +83,7 @@ if (!matchId) {
   });
 
   document.getElementById('regenerateBanpickBtn')?.addEventListener('click', regenerateBanpickSession);
+  document.getElementById('cancelMatchBtn')?.addEventListener('click', cancelMatch);
 
   // Listen to match document in real-time
   onSnapshot(doc(db, 'matches', matchId), (snap) => {
@@ -126,7 +127,16 @@ function render() {
       battleStatusEl.innerHTML = '<span class="badge badge-live">Live</span>';
     } else if (matchData.status === 'completed') {
       battleStatusEl.innerHTML = '<span class="badge badge-completed">Completed</span>';
+    } else if (matchData.status === 'canceled') {
+      battleStatusEl.innerHTML = '<span class="badge badge-canceled">Canceled</span>';
     }
+  }
+
+  // Staff actions: cancel only available pre-completion
+  const staffActionsEl = document.getElementById('staffActions');
+  if (staffActionsEl) {
+    const showCancel = isStaff && (matchData.status === 'banpick' || matchData.status === 'in_progress');
+    staffActionsEl.style.display = showCancel ? 'block' : 'none';
   }
 
   // Winner highlight
@@ -199,7 +209,31 @@ function render() {
     }
 
     renderMapCards();
+
+  } else if (matchData.status === 'canceled') {
+    if (banpickState) banpickState.style.display = 'none';
+    if (banpickBanner) banpickBanner.style.display = 'none';
+    if (mapCards) mapCards.style.display = 'none';
+    if (finalizeBar) finalizeBar.style.display = 'none';
+    if (crpResult) crpResult.style.display = 'none';
+
+    if (sessionUnsubscribe) {
+      sessionUnsubscribe();
+      sessionUnsubscribe = null;
+    }
+
+    const canceledStateEl = document.getElementById('canceledState');
+    const canceledReasonEl = document.getElementById('canceledReason');
+    if (canceledStateEl) canceledStateEl.style.display = 'block';
+    if (canceledReasonEl) {
+      canceledReasonEl.textContent = matchData.cancelReason ? `Reason: ${matchData.cancelReason}` : '';
+    }
+    return;
   }
+
+  // Hide canceled banner when status moves away from canceled (defensive)
+  const canceledStateEl = document.getElementById('canceledState');
+  if (canceledStateEl) canceledStateEl.style.display = 'none';
 }
 
 // --- SESSION UPDATE HANDLER ---
@@ -271,6 +305,48 @@ async function regenerateBanpickSession() {
   } catch (e) {
     console.error('Failed to regenerate ban/pick:', e);
     toast('Failed to regenerate ban/pick', true);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function cancelMatch() {
+  if (!isStaff || !matchData) return;
+  if (matchData.status !== 'banpick' && matchData.status !== 'in_progress') return;
+
+  const reason = prompt('Cancel this match? Optionally enter a reason (visible on the battle page):', '');
+  if (reason === null) return; // user dismissed prompt
+
+  const btn = document.getElementById('cancelMatchBtn');
+  if (btn) btn.disabled = true;
+
+  try {
+    if (sessionUnsubscribe) {
+      sessionUnsubscribe();
+      sessionUnsubscribe = null;
+      sessionData = null;
+      lastProcessedSessionState = null;
+    }
+
+    const batch = writeBatch(db);
+    if (matchData.banpickSessionId) {
+      batch.delete(doc(db, 'sessions', matchData.banpickSessionId));
+    }
+    batch.update(doc(db, 'matches', matchId), {
+      status: 'canceled',
+      canceledAt: Timestamp.now(),
+      canceledBy: currentUser?.uid || null,
+      cancelReason: reason.trim(),
+    });
+    await batch.commit();
+
+    toast('Match canceled');
+
+    const threadId = matchData.discordThreadId || null;
+    postToDiscord(threadId, matchCanceledMessage(matchData.teamAName, matchData.teamBName, reason.trim()));
+  } catch (e) {
+    console.error('Failed to cancel match:', e);
+    toast('Failed to cancel match: ' + e.message, true);
   } finally {
     if (btn) btn.disabled = false;
   }

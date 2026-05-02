@@ -82,3 +82,8 @@ export function matchFinalizedMessage(winnerName, loserName, scoreA, scoreB, tea
 export function declineFinalizedMessage(challengerName, declinerName, challengerCRP, declinerCRP, newChallengerPos) {
   return `\uD83D\uDEA9 **${declinerName}** declined the challenge from **${challengerName}**. ${challengerName} moves to #${newChallengerPos}. CRP: +${challengerCRP} / +${declinerCRP}.`;
 }
+
+export function matchCanceledMessage(teamAName, teamBName, reason) {
+  const reasonStr = reason ? ` Reason: ${reason}` : '';
+  return `\uD83D\uDED1 **MATCH CANCELED:** ${teamAName} vs ${teamBName}.${reasonStr}`;
+}

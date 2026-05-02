@@ -42,9 +42,10 @@ async function loadMatch() {
 
   // Only show non-completed matches to staff
   if (match.status !== 'completed' && !isStaff) {
+    const msg = match.status === 'canceled' ? 'This match was canceled.' : 'This match is still in progress.';
     matchContainer.innerHTML = `
       <p style="text-align: center; color: var(--text-dim); padding: 40px 0;">
-        This match is still in progress.
+        ${msg}
         <a href="/" style="color: var(--primary);">Back to standings</a>
       </p>
     `;
