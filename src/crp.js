@@ -143,3 +143,29 @@ export function calcCRP(winner, loser, homeFor) {
     loserRules,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Decline CRP
+// ---------------------------------------------------------------------------
+
+/**
+ * CRP for a challenge-decline. Both teams get 50% of the relevant base value
+ * (rounded to nearest integer). No home bonus, no streak bonus.
+ *
+ * @param {{ position: number|null }} challenger - lower-ranked team (the one moving up)
+ * @param {{ position: number|null }} decliner   - higher-ranked team (the one declining)
+ */
+export function calcDeclineCRP(challenger, decliner) {
+  const challengerRules = getRules(challenger.position);
+  const declinerRules = getRules(decliner.position);
+  const challengerTotal = Math.round(declinerRules.win * 0.5);
+  const declinerTotal = Math.round(challengerRules.loss * 0.5);
+  return {
+    challengerTotal,
+    declinerTotal,
+    challengerBase: challengerTotal,
+    declinerBase: declinerTotal,
+    challengerRules,
+    declinerRules,
+  };
+}

@@ -5,9 +5,9 @@ import {
   setDoc, updateDoc, deleteDoc, addDoc, writeBatch, Timestamp,
   signInWithPopup, getAdditionalUserInfo, onAuthStateChanged, signOut
 } from './firebase.js';
-import { getTier, getRules, calcCRP } from './crp.js';
-import { finalizeMatch } from './finalize.js';
-import { postToDiscord, battleCreatedMessage, clearWebhookCache } from './discord.js';
+import { getTier, getRules, calcCRP, calcDeclineCRP } from './crp.js';
+import { finalizeMatch, finalizeDecline } from './finalize.js';
+import { postToDiscord, battleCreatedMessage, declineFinalizedMessage, clearWebhookCache } from './discord.js';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -190,6 +190,11 @@ function initDashboard() {
   document.getElementById('m-win').addEventListener('change', onMatchSelectionChange);
   document.getElementById('m-home').addEventListener('change', onMatchSelectionChange);
 
+  // Decline form
+  document.getElementById('d-challenger').addEventListener('change', onDeclineSelectionChange);
+  document.getElementById('d-decliner').addEventListener('change', onDeclineSelectionChange);
+  document.getElementById('logDeclineBtn').addEventListener('click', logDecline);
+
   // Battles
   document.getElementById('createBattleBtn').addEventListener('click', createBattle);
   document.getElementById('b-ta').addEventListener('change', refreshBattleDropdowns);
@@ -234,6 +239,25 @@ function refreshDropdowns() {
   document.getElementById('m-ta').innerHTML = baseOpt + teamOpts;
   document.getElementById('m-tb').innerHTML = baseOpt + teamOpts;
   document.getElementById('del-team').innerHTML = baseOpt + teamOpts;
+
+  // Decline dropdowns: ranked teams only, sorted by position
+  const ranked = [...teamsCache]
+    .map(t => ({ team: t, standing: standingsCache.find(s => s.id === t.id) }))
+    .filter(x => x.standing?.position != null)
+    .sort((a, b) => a.standing.position - b.standing.position);
+  const declineOpts = ranked.map(({ team, standing }) =>
+    `<option value="${team.id}">#${standing.position} ${team.name} — ${getTier(standing.position)}</option>`
+  ).join('');
+  const dCh = document.getElementById('d-challenger');
+  const dDe = document.getElementById('d-decliner');
+  if (dCh && dDe) {
+    const selCh = dCh.value;
+    const selDe = dDe.value;
+    dCh.innerHTML = baseOpt + declineOpts;
+    dDe.innerHTML = baseOpt + declineOpts;
+    dCh.value = selCh;
+    dDe.value = selDe;
+  }
 
   // Battle dropdowns sorted by position, filtered to exclude opposite selection
   refreshBattleDropdowns();
@@ -804,6 +828,117 @@ async function logMatch() {
   } catch (e) {
     console.error(e);
     toast('Failed to log match: ' + e.message, true);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Challenge-Decline Logging
+// ---------------------------------------------------------------------------
+
+function onDeclineSelectionChange() {
+  const challengerId = document.getElementById('d-challenger').value;
+  const declinerId = document.getElementById('d-decliner').value;
+  const infoBox = document.getElementById('decline-info-box');
+  const prevEl = document.getElementById('decline-preview');
+
+  const baseInfo = "A decline means the higher-ranked team refused a challenge from the team directly below them. The challenger auto-moves up. Half CRP, no bonuses, W/L counts; the decliner's winstreak is broken.";
+
+  if (!challengerId || !declinerId) {
+    prevEl.style.display = 'none';
+    infoBox.innerHTML = baseInfo;
+    return;
+  }
+  if (challengerId === declinerId) {
+    prevEl.style.display = 'none';
+    infoBox.innerHTML = '⚠ Challenger and decliner must be different teams.';
+    return;
+  }
+
+  const cStanding = standingsCache.find(s => s.id === challengerId);
+  const dStanding = standingsCache.find(s => s.id === declinerId);
+  const cTeam = teamsCache.find(t => t.id === challengerId);
+  const dTeam = teamsCache.find(t => t.id === declinerId);
+  if (!cStanding || !dStanding || !cTeam || !dTeam) {
+    prevEl.style.display = 'none';
+    return;
+  }
+
+  const cPos = cStanding.position;
+  const dPos = dStanding.position;
+  if (cPos == null || dPos == null) {
+    prevEl.style.display = 'none';
+    infoBox.innerHTML = '⚠ Both teams must be ranked (have a position).';
+    return;
+  }
+  if (cPos !== dPos + 1) {
+    prevEl.style.display = 'none';
+    infoBox.innerHTML = `⚠ Adjacency required: challenger must be exactly one position below decliner. Currently challenger is #${cPos}, decliner is #${dPos}.`;
+    return;
+  }
+
+  const c = calcDeclineCRP(cStanding, dStanding);
+
+  let rows = `<div class="crp-row"><span>${cTeam.name} wins (50% of #${dPos}'s win value)</span><span class="cv">+${c.challengerTotal}</span></div>`;
+  rows += `<div class="crp-div"></div><div class="crp-row"><span><b>→ ${cTeam.name} total</b></span><span class="cv">+${c.challengerTotal}</span></div><div class="crp-div"></div>`;
+  rows += `<div class="crp-row"><span>${dTeam.name} loses (50% of #${cPos}'s loss value)</span><span class="cv">+${c.declinerTotal}</span></div>`;
+  rows += `<div class="crp-div"></div><div class="crp-row"><span><b>→ ${dTeam.name} total</b></span><span class="cv">+${c.declinerTotal}</span></div>`;
+  rows += `<div class="crp-div"></div><div class="crp-row" style="color:var(--accent)"><span>📈 ${cTeam.name} moves to #${dPos} · ${dTeam.name} drops to #${dPos + 1}</span><span></span></div>`;
+  const streakNote = (dStanding.streak || 0) > 0
+    ? `${dTeam.name}'s ${dStanding.streak}-win streak ends. Challenger streak unchanged. No home or streak bonuses.`
+    : `${dTeam.name}'s loss streak extends. Challenger streak unchanged. No home or streak bonuses.`;
+  rows += `<div class="crp-row" style="color:var(--text-mute)"><span>${streakNote}</span><span></span></div>`;
+
+  document.getElementById('decline-rows').innerHTML = rows;
+  prevEl.style.display = 'block';
+  infoBox.innerHTML = `<b>${cTeam.name}</b> — #${cPos} ${getTier(cPos)}<br><b>${dTeam.name}</b> — #${dPos} ${getTier(dPos)}`;
+}
+
+async function logDecline() {
+  const challengerId = document.getElementById('d-challenger').value;
+  const declinerId = document.getElementById('d-decliner').value;
+
+  if (!challengerId || !declinerId) { toast('Select both teams', true); return; }
+  if (challengerId === declinerId) { toast('Teams must be different', true); return; }
+
+  const cStanding = standingsCache.find(s => s.id === challengerId);
+  const dStanding = standingsCache.find(s => s.id === declinerId);
+  const cTeam = teamsCache.find(t => t.id === challengerId);
+  const dTeam = teamsCache.find(t => t.id === declinerId);
+  if (!cStanding || !dStanding || !cTeam || !dTeam) { toast('Team data not found', true); return; }
+
+  const cPos = cStanding.position;
+  const dPos = dStanding.position;
+  if (cPos == null || dPos == null) { toast('Both teams must be ranked', true); return; }
+  if (cPos !== dPos + 1) {
+    toast(`Adjacency required: challenger #${cPos} is not directly below decliner #${dPos}`, true);
+    return;
+  }
+
+  if (!confirm(`Log decline: ${dTeam.name} declined challenge from ${cTeam.name}? ${cTeam.name} will move to #${dPos}.`)) return;
+
+  try {
+    const result = await finalizeDecline(db, {
+      challengerId,
+      declinerId,
+      challengerName: cTeam.name,
+      declinerName: dTeam.name,
+      recordedBy: currentUser.uid,
+    }, cStanding, dStanding);
+
+    toast(`Decline logged: ${cTeam.name} +${result.challengerCRP} / ${dTeam.name} +${result.declinerCRP} CRP · ${cTeam.name} moved to #${result.newChallengerPos}`);
+
+    // Reset form
+    document.getElementById('d-challenger').value = '';
+    document.getElementById('d-decliner').value = '';
+    document.getElementById('decline-preview').style.display = 'none';
+    document.getElementById('decline-info-box').innerHTML = "A decline means the higher-ranked team refused a challenge from the team directly below them. The challenger auto-moves up. Half CRP, no bonuses, W/L counts; the decliner's winstreak is broken.";
+    loadMatchesForDelete();
+
+    // Discord webhook (no-op if not configured)
+    postToDiscord(null, declineFinalizedMessage(cTeam.name, dTeam.name, result.challengerCRP, result.declinerCRP, result.newChallengerPos));
+  } catch (e) {
+    console.error(e);
+    toast('Failed to log decline: ' + e.message, true);
   }
 }
 

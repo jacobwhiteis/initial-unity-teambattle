@@ -75,6 +75,7 @@
                     <button class="mod-nav active" data-section="sec-teams">Teams</button>
                     <button class="mod-nav" data-section="sec-drivers">Drivers</button>
                     <button class="mod-nav" data-section="sec-matches">Log Match</button>
+                    <button class="mod-nav" data-section="sec-decline">Log Decline</button>
                     <button class="mod-nav" data-section="sec-battles">Battles</button>
                     <button class="mod-nav" data-section="sec-invites" id="invitesNav" style="display:none">Invites</button>
                     <button class="mod-nav" data-section="sec-danger" id="dangerNav" style="display:none">Danger Zone</button>
@@ -214,6 +215,41 @@
 
                             <div class="form-actions" style="margin-top:1.25rem;">
                                 <button class="btn btn-primary" id="logMatchBtn">Log Match &amp; Apply</button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- ===== LOG DECLINE ===== -->
+                    <div class="mod-section" id="sec-decline">
+
+                        <div class="card">
+                            <h4>Log Challenge Decline</h4>
+
+                            <div class="info-box" id="decline-info-box">A decline means the higher-ranked team refused a challenge from the team directly below them. The challenger auto-moves up. Half CRP, no bonuses, W/L counts; the decliner's winstreak is broken.</div>
+
+                            <div class="fr2">
+                                <div class="form-group">
+                                    <label for="d-challenger">Challenger (lower rank)</label>
+                                    <select id="d-challenger">
+                                        <option value="">— select team —</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="d-decliner">Decliner (higher rank)</label>
+                                    <select id="d-decliner">
+                                        <option value="">— select team —</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="crp-preview" id="decline-preview" style="display:none">
+                                <h5>Decline Preview</h5>
+                                <div id="decline-rows"></div>
+                            </div>
+
+                            <div class="form-actions" style="margin-top:1.25rem;">
+                                <button class="btn btn-primary" id="logDeclineBtn">Log Decline &amp; Apply</button>
                             </div>
                         </div>
 

@@ -78,3 +78,7 @@ export function mapWinnerMessage(mapNum, mapName, winnerName, scoreA, scoreB, te
 export function matchFinalizedMessage(winnerName, loserName, scoreA, scoreB, teamAName, teamBName, winnerCRP, loserCRP) {
   return `\uD83C\uDFC6 **MATCH COMPLETE:** ${winnerName} defeats ${loserName} ${teamAName === winnerName ? scoreA : scoreB}\u2014${teamAName === winnerName ? scoreB : scoreA}! (+${winnerCRP} CRP)`;
 }
+
+export function declineFinalizedMessage(challengerName, declinerName, challengerCRP, declinerCRP, newChallengerPos) {
+  return `\uD83D\uDEA9 **${declinerName}** declined the challenge from **${challengerName}**. ${challengerName} moves to #${newChallengerPos}. CRP: +${challengerCRP} / +${declinerCRP}.`;
+}

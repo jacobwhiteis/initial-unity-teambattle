@@ -6,7 +6,7 @@
  */
 
 import { doc, collection, writeBatch, Timestamp, updateDoc } from './firebase.js';
-import { calcCRP, getRules } from './crp.js';
+import { calcCRP, calcDeclineCRP, getRules } from './crp.js';
 
 /**
  * Finalize a match: calculate CRP, update standings, handle position swaps.
@@ -172,5 +172,123 @@ export async function finalizeMatch(db, params, winnerStanding, loserStanding, a
     winnerCRP: c.winnerTotal,
     loserCRP: c.loserTotal,
     positionShifted,
+  };
+}
+
+/**
+ * Finalize a challenge-decline. Half-CRP, no bonuses, forced position swap,
+ * W/L incremented but streak counters frozen on both sides.
+ *
+ * Caller must validate strict adjacency (challenger.position === decliner.position + 1)
+ * before calling this.
+ *
+ * @param {object} db
+ * @param {{ challengerId: string, declinerId: string,
+ *           challengerName: string, declinerName: string,
+ *           recordedBy: string }} params
+ * @param {object} challengerStanding - lower-ranked team's standings doc
+ * @param {object} declinerStanding   - higher-ranked team's standings doc
+ * @returns {Promise<{challengerCRP: number, declinerCRP: number,
+ *                    newChallengerPos: number, newDeclinerPos: number}>}
+ */
+export async function finalizeDecline(db, params, challengerStanding, declinerStanding) {
+  const { challengerId, declinerId, challengerName, declinerName, recordedBy } = params;
+
+  const c = calcDeclineCRP(challengerStanding, declinerStanding);
+  const now = Timestamp.now();
+  const batch = writeBatch(db);
+
+  // Match doc — type='decline' so it's distinguishable from real matches
+  const matchRef = doc(collection(db, 'matches'));
+  batch.set(matchRef, {
+    teamA: challengerId,
+    teamB: declinerId,
+    teamAName: challengerName,
+    teamBName: declinerName,
+    format: 'DECLINE',
+    status: 'completed',
+    type: 'decline',
+    winner: challengerId,
+    score: { teamA: 0, teamB: 0 },
+    maps: [],
+    mapResults: [],
+    date: now,
+    finalizedAt: now,
+    recordedBy,
+    notes: 'Challenge declined',
+  });
+
+  // Position swap — adjacency was validated upstream, so just swap the two slots.
+  const cPos = challengerStanding.position;
+  const dPos = declinerStanding.position;
+  const newChallengerPos = dPos;
+  const newDeclinerPos = dPos + 1;
+
+  // Challenger: W++, CRP+, position swap, streak counters UNCHANGED, mapWins UNCHANGED.
+  const challengerWins = (challengerStanding.wins || 0) + 1;
+  const challengerLosses = challengerStanding.losses || 0;
+  const challengerHistory = [
+    {
+      opponent: declinerName,
+      result: 'Win (Decline)',
+      crp_gained: c.challengerTotal,
+      home_map_bonus: false,
+      streak_bonus: 0,
+      pos_before: cPos,
+      pos_after: newChallengerPos,
+      timestamp: now,
+    },
+    ...(challengerStanding.match_history || []),
+  ].slice(0, 50);
+
+  batch.update(doc(db, 'standings', challengerId), {
+    crp: (challengerStanding.crp || 0) + c.challengerTotal,
+    wins: challengerWins,
+    winRate: Math.round((challengerWins / (challengerWins + challengerLosses)) * 100),
+    position: newChallengerPos,
+    rank: newChallengerPos,
+    match_history: challengerHistory,
+    lastMatchDate: now,
+  });
+
+  // Decliner: L++, CRP+, position swap, streak counters UNCHANGED, mapLosses UNCHANGED.
+  const declinerWins = declinerStanding.wins || 0;
+  const declinerLosses = (declinerStanding.losses || 0) + 1;
+  const declinerHistory = [
+    {
+      opponent: challengerName,
+      result: 'Loss (Decline)',
+      crp_gained: c.declinerTotal,
+      home_map_bonus: false,
+      streak_bonus: 0,
+      pos_before: dPos,
+      pos_after: newDeclinerPos,
+      timestamp: now,
+    },
+    ...(declinerStanding.match_history || []),
+  ].slice(0, 50);
+
+  // Decline ends a winstreak: reset consecutive_wins, flip/extend streak into a loss streak.
+  const declinerNewStreak = (declinerStanding.streak < 0 ? declinerStanding.streak - 1 : -1);
+
+  batch.update(doc(db, 'standings', declinerId), {
+    crp: (declinerStanding.crp || 0) + c.declinerTotal,
+    losses: declinerLosses,
+    consecutive_wins: 0,
+    streak: declinerNewStreak,
+    winRate: Math.round((declinerWins / (declinerWins + declinerLosses)) * 100),
+    position: newDeclinerPos,
+    rank: newDeclinerPos,
+    match_history: declinerHistory,
+    lastMatchDate: now,
+  });
+
+  await batch.commit();
+
+  return {
+    challengerCRP: c.challengerTotal,
+    declinerCRP: c.declinerTotal,
+    newChallengerPos,
+    newDeclinerPos,
   };
 }
