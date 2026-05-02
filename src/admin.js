@@ -8,6 +8,7 @@ import {
 import { getTier, getRules, calcCRP, calcDeclineCRP } from './crp.js';
 import { finalizeMatch, finalizeDecline } from './finalize.js';
 import { postToDiscord, battleCreatedMessage, declineFinalizedMessage, clearWebhookCache } from './discord.js';
+import { sortRoster } from './roster.js';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -371,7 +372,7 @@ function refreshTeamList() {
   }
   el.innerHTML = teamsCache.map(t => {
     const standing = standingsCache.find(s => s.id === t.id);
-    const drivers = t.roster || [];
+    const drivers = sortRoster(t.roster);
     const driverNames = drivers.map(d => {
       const roleTag = d.role === 'Leader' ? ' ★' : d.role === 'Co-Leader' ? ' ☆' : '';
       return d.name + roleTag;
@@ -405,6 +406,17 @@ function openTeamEditor(teamId) {
   const team = teamsCache.find(t => t.id === teamId);
   if (!team) return;
   const drivers = team.roster || [];
+  // Render drivers sorted (Leader → Co-Leader → Member, then alpha) but keep
+  // their original roster index so save/remove handlers target the right slot.
+  const ROLE_ORDER = { Leader: 0, 'Co-Leader': 1, Member: 2 };
+  const sortedDrivers = drivers
+    .map((d, origIdx) => ({ d, origIdx }))
+    .sort((a, b) => {
+      const ra = ROLE_ORDER[a.d.role] ?? 3;
+      const rb = ROLE_ORDER[b.d.role] ?? 3;
+      if (ra !== rb) return ra - rb;
+      return (a.d.name || '').localeCompare(b.d.name || '', undefined, { sensitivity: 'base' });
+    });
   const teamStaff = team.teamStaff || [];
 
   // Populate team info form
@@ -437,7 +449,7 @@ function openTeamEditor(teamId) {
     <h4 style="margin-bottom:.5rem;">Drivers (${drivers.length}/${MAX_ROSTER_SIZE})</h4>
     <p style="color:var(--text-mute);font-size:.82rem;margin-bottom:1rem;">New drivers are added via Discord bot (<code>/add-team-driver</code>). Edit name, role, or car below.</p>
     <div class="mod-list" id="dm-driver-list">
-      ${drivers.length ? drivers.map((d, i) => `<div class="mod-list-item" style="flex-wrap:wrap;gap:.5rem;">
+      ${sortedDrivers.length ? sortedDrivers.map(({ d, origIdx: i }) => `<div class="mod-list-item" style="flex-wrap:wrap;gap:.5rem;">
         <div style="display:flex;align-items:center;gap:.5rem;flex:1;min-width:200px;flex-wrap:wrap;">
           <input type="text" class="dm-edit-name" data-idx="${i}" value="${(d.name || '').replace(/"/g, '&quot;')}" style="flex:1;min-width:120px;padding:.3rem .5rem;font-size:.85rem;">
           <select class="dm-edit-role" data-idx="${i}" style="width:120px;padding:.3rem .5rem;font-size:.85rem;">

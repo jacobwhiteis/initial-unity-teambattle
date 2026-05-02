@@ -1,6 +1,7 @@
 import './nav.js';
 import { db, collection, query, orderBy, limit, onSnapshot } from './firebase.js';
 import { getTier, getTierClass, getRules } from './crp.js';
+import { sortRoster } from './roster.js';
 
 // ---------------------------------------------------------------------------
 // DOM Elements
@@ -83,7 +84,7 @@ function renderBoard(teams, mode) {
   teams.forEach((team, i) => {
     const crpRank = i + 1;
     const tier = getTier(team.position);
-    const drivers = team.roster || [];
+    const drivers = sortRoster(team.roster);
     const driverPreview = drivers.map(d => d.name).join(', ');
     const streak = team.consecutive_wins || 0;
 
@@ -145,7 +146,7 @@ function toggleExpand(tbody, tr, expTr, team, mode) {
   if (isOpen) return;
 
   const inner = expTr.querySelector('.expand-inner');
-  const drivers = team.roster || [];
+  const drivers = sortRoster(team.roster);
   const hist = team.match_history || [];
 
   // Drivers section

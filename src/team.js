@@ -1,6 +1,7 @@
 import './nav.js';
 import { db, collection, doc, getDoc, getDocs, query, orderBy, where } from './firebase.js';
 import { getTier, getTierClass } from './crp.js';
+import { sortRoster } from './roster.js';
 
 const teamTitle = document.getElementById('teamTitle');
 const teamStats = document.getElementById('teamStats');
@@ -126,10 +127,11 @@ async function loadTeam() {
   let html = '';
 
   // Roster
-  if (team.roster && team.roster.length > 0) {
+  const sortedRoster = sortRoster(team.roster);
+  if (sortedRoster.length > 0) {
     html += '<h3 class="section-header">Roster</h3>';
     html += '<div class="roster-grid">';
-    team.roster.forEach(player => {
+    sortedRoster.forEach(player => {
       const roleLabel = player.role === 'Leader' ? ' ★' : player.role === 'Co-Leader' ? ' ☆' : '';
       const carLabel = player.car ? ` · ${player.car}` : '';
       html += `<span class="roster-player">${player.name}${roleLabel}${carLabel}</span>`;
