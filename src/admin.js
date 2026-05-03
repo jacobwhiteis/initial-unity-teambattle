@@ -442,6 +442,7 @@ function openTeamEditor(teamId) {
   document.querySelectorAll('.mod-nav').forEach(b => b.classList.remove('active'));
   document.getElementById('sec-teams').classList.add('active');
   document.querySelector('[data-section="sec-teams"]').classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 
   // Render driver + staff editor in the driver-manager panel
   const el = document.getElementById('driver-manager');
