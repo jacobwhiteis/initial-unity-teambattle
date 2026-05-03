@@ -90,7 +90,7 @@ See `src/crp.js` for the full calculation logic and `POS_RULES` table.
 A Cloudflare Worker at `worker/` handles Discord slash commands for team and driver management:
 
 **Staff-only (write):**
-- `/create-team @team_role [tag]` — creates a new team doc + standing linked to a Discord role
+- `/create-team [tag] [role_name]` — creates a new team doc + standing and auto-creates a Discord role with the given name (always; use `/link-team` to attach an existing role).
 - `/link-team @team_role [team_tag]` — links an existing Discord role to an existing team
 - `/add-team-driver @team_role @player [display_name] [car]` — adds a Discord user to a team roster and assigns the team's Discord role
 - `/remove-team-driver @team_role @player` — removes a Discord user from a roster and removes the team's Discord role
@@ -114,7 +114,7 @@ Secrets (set via `npx wrangler secret put`): `DISCORD_PUBLIC_KEY`, `DISCORD_APP_
 
 The bot requires the **Manage Roles** permission in Discord, and its role must be positioned above team roles in the server hierarchy for role assignment to work.
 
-Command registration: `DISCORD_APP_ID=... DISCORD_BOT_TOKEN=... node scripts/register-commands.js`
+Command registration: `node scripts/register-commands.js --app-id <id> --token <bot-token>` (or via `DISCORD_APP_ID` / `DISCORD_BOT_TOKEN` env vars). Imports the command list from `worker/src/commands.js` so there's a single source of truth.
 
 The Worker uses the Firestore REST API (not firebase-admin, which doesn't run in Workers) with a Google Cloud service account for authentication.
 

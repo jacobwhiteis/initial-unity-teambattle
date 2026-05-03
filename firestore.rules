@@ -18,6 +18,13 @@ service cloud.firestore {
       allow write: if isStaff();
     }
 
+    // Drivers — written by the Discord bot Worker (service account, bypasses rules).
+    // Staff need delete access here so the danger-zone delete-team batch can clean up roster docs.
+    match /drivers/{discordId} {
+      allow read: if true;
+      allow write: if isStaff();
+    }
+
     // Banpick sessions need public write (both teams interact)
     match /sessions/{sessionId} {
       allow read: if true;

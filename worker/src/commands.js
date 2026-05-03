@@ -162,17 +162,17 @@ export const VIEW_TEAM_HISTORY = {
 
 export const CREATE_TEAM = {
   name: 'create-team',
-  description: 'Create a new team linked to a Discord role (staff only)',
+  description: 'Create a new team and auto-create its Discord role (staff only).',
   options: [
-    {
-      name: 'team',
-      description: 'Discord role for the team',
-      type: 8, // ROLE
-      required: true,
-    },
     {
       name: 'tag',
       description: 'Short tag (e.g. AAC)',
+      type: 3, // STRING
+      required: true,
+    },
+    {
+      name: 'role_name',
+      description: 'Name for the new Discord role (used as the team name)',
       type: 3, // STRING
       required: true,
     },

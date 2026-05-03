@@ -209,6 +209,7 @@ function initDashboard() {
   // CRP / position override (admin only)
   document.getElementById('setCrpBtn').addEventListener('click', setCrpOverride);
   document.getElementById('setPositionBtn').addEventListener('click', setPositionOverride);
+  document.getElementById('setUnrankedBtn').addEventListener('click', setUnrankedOverride);
 
   // Danger zone
   delTeamBtn.addEventListener('click', deleteTeamAction);
@@ -640,6 +641,19 @@ async function setPositionOverride() {
     toast(`Position set to #${position}`);
   } catch (e) {
     toast('Failed to set position: ' + e.message, true);
+  }
+}
+
+async function setUnrankedOverride() {
+  if (staffRole !== 'admin') { toast('Admin access required', true); return; }
+  const teamId = document.getElementById('t-editing').value;
+  if (!teamId) { toast('Select a team to edit first', true); return; }
+  try {
+    await updateDoc(doc(db, 'standings', teamId), { position: null, rank: null });
+    document.getElementById('t-position').value = '';
+    toast('Team set to Unranked');
+  } catch (e) {
+    toast('Failed to set unranked: ' + e.message, true);
   }
 }
 

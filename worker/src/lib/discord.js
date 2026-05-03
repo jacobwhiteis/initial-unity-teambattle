@@ -74,6 +74,23 @@ export async function addRoleToMember(env, guildId, userId, roleId) {
   return res.status === 204;
 }
 
+/** Create a Discord role in a guild. Returns the role object on success, null on failure. */
+export async function createGuildRole(env, guildId, name) {
+  const res = await fetch(`https://discord.com/api/v10/guilds/${guildId}/roles`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bot ${env.DISCORD_BOT_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ name, mentionable: true, hoist: false }),
+  });
+  if (!res.ok) {
+    console.error(`Discord role create failed: ${res.status} ${await res.text()}`);
+    return null;
+  }
+  return res.json();
+}
+
 /** Remove a Discord role from a guild member. Returns true on success. */
 export async function removeRoleFromMember(env, guildId, userId, roleId) {
   const res = await fetch(
