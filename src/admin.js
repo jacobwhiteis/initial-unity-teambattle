@@ -995,11 +995,22 @@ function deleteTeamAction() {
   const confirm = document.getElementById('del-team-confirm').value.trim();
   if (confirm !== team.name) { toast(`Type "${team.name}" to confirm`, true); return; }
 
+  const deletedStanding = standingsCache.find(s => s.id === teamId);
+  const deletedPos = deletedStanding?.position;
+
   const batch = writeBatch(db);
   batch.delete(doc(db, 'teams', teamId));
   batch.delete(doc(db, 'standings', teamId));
   for (const driver of (team.roster || [])) {
     if (driver.discordId) batch.delete(doc(db, 'drivers', driver.discordId));
+  }
+  // Close the leaderboard gap: shift every ranked team below the deleted slot up by 1
+  if (deletedPos != null) {
+    standingsCache.forEach(s => {
+      if (s.id !== teamId && s.position != null && s.position > deletedPos) {
+        batch.update(doc(db, 'standings', s.id), { position: s.position - 1, rank: s.position - 1 });
+      }
+    });
   }
   batch.commit()
     .then(() => { toast('Team deleted'); document.getElementById('del-team-confirm').value = ''; })
