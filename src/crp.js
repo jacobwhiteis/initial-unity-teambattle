@@ -49,21 +49,22 @@ export function canChallenge(challengerPos, declinerPos) {
 // ---------------------------------------------------------------------------
 
 export const POS_RULES = {
-  1:  { win: 32, loss: 18, home: 7, streak: 12, format: "BO5" },
-  2:  { win: 27, loss: 14,  home: 6, streak: 12, format: "BO5" },
+  1:  { win: 32, loss: 16, home: 7, streak: 12, format: "BO5" },
+  2:  { win: 27, loss: 13,  home: 6, streak: 12, format: "BO5" },
   3:  { win: 22, loss: 10,  home: 6, streak: 12, format: "BO5" },
-  4:  { win: 17, loss: 8,  home: 5, streak: 12, format: "BO5" },
-  5:  { win: 15, loss: 7,  home: 5, streak: 12, format: "BO5" },
-  6:  { win: 10,  loss: 6,  home: 4, streak: 8,  format: "BO3" },
-  7:  { win: 6,  loss: 4,  home: 3, streak: 8,  format: "BO3" },
-  8:  { win: 6,  loss: 4,  home: 3, streak: 8,  format: "BO3" },
-  9:  { win: 6,  loss: 4,  home: 3, streak: 8,  format: "BO3" },
-  10: { win: 5,  loss: 4,  home: 3, streak: 8,  format: "BO3" },
-  11: { win: 4,  loss: 3,  home: 3, streak: 6,  format: "BO3" },
-  12: { win: 3,  loss: 2,  home: 2, streak: 6,  format: "BO3" },
-  13: { win: 3,  loss: 2,  home: 2, streak: 6,  format: "BO3" },
-  14: { win: 3,  loss: 2,  home: 2, streak: 6,  format: "BO3" },
-  15: { win: 3,  loss: 2,  home: 2, streak: 6,  format: "BO3" },
+  4:  { win: 17, loss: 7,  home: 5, streak: 12, format: "BO5" },
+  5:  { win: 15, loss: 5,  home: 5, streak: 12, format: "BO5" },
+  6:  { win: 10,  loss: 4,  home: 4, streak: 8,  format: "BO3" },
+  7:  { win: 7,  loss: 2,  home: 3, streak: 8,  format: "BO3" },
+  8:  { win: 7,  loss: 2,  home: 3, streak: 8,  format: "BO3" },
+  9:  { win: 7,  loss: 2,  home: 3, streak: 8,  format: "BO3" },
+  10: { win: 5,  loss: 2,  home: 3, streak: 8,  format: "BO3" },
+  11: { win: 5,  loss: 2,  home: 3, streak: 5,  format: "BO3" },
+  12: { win: 4,  loss: 1,  home: 2, streak: 5,  format: "BO3" },
+  13: { win: 4,  loss: 1,  home: 2, streak: 5,  format: "BO3" },
+  14: { win: 4,  loss: 1,  home: 2, streak: 5,  format: "BO3" },
+  15: { win: 4,  loss: 1,  home: 2, streak: 5,  format: "BO3" },
+  16: { win: 3,  loss: 1,  home: 2, streak: 4,  format: "BO3" }
 };
 
 export const DIVISION3_RULES = { win: 2, loss: 1, home: 2, streak: 4, format: "BO3" };
