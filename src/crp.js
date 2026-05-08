@@ -31,6 +31,19 @@ export function getTierClass(pos) {
   return getTier(pos).replace(/\s+/g, "");
 }
 
+/**
+ * Whether `challengerPos` may issue a challenge against `declinerPos`.
+ * Rule: same division, and decliner ranked above challenger (lower position number).
+ * @param {number|null} challengerPos
+ * @param {number|null} declinerPos
+ * @returns {boolean}
+ */
+export function canChallenge(challengerPos, declinerPos) {
+  if (challengerPos == null || declinerPos == null) return false;
+  if (declinerPos >= challengerPos) return false;
+  return getTier(challengerPos) === getTier(declinerPos);
+}
+
 // ---------------------------------------------------------------------------
 // Position-based CRP value tables
 // ---------------------------------------------------------------------------
@@ -40,7 +53,7 @@ export const POS_RULES = {
   2:  { win: 27, loss: 14,  home: 6, streak: 12, format: "BO5" },
   3:  { win: 22, loss: 10,  home: 6, streak: 12, format: "BO5" },
   4:  { win: 17, loss: 8,  home: 5, streak: 12, format: "BO5" },
-  5:  { win: 15, loss: 7,  home: 5, streak: 12, format: "BO3" },
+  5:  { win: 15, loss: 7,  home: 5, streak: 12, format: "BO5" },
   6:  { win: 10,  loss: 6,  home: 4, streak: 8,  format: "BO3" },
   7:  { win: 6,  loss: 4,  home: 3, streak: 8,  format: "BO3" },
   8:  { win: 6,  loss: 4,  home: 3, streak: 8,  format: "BO3" },

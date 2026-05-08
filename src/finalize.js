@@ -176,11 +176,13 @@ export async function finalizeMatch(db, params, winnerStanding, loserStanding, a
 }
 
 /**
- * Finalize a challenge-decline. Half-CRP, no bonuses, forced position swap,
- * W/L incremented but streak counters frozen on both sides.
+ * Finalize a challenge-decline. Half-CRP, no bonuses, position shift mirrors
+ * an upset win: challenger jumps to decliner's slot, decliner and every team
+ * strictly between them shift down by 1. Challenger streak unchanged; decliner
+ * winstreak resets and flips/extends into a loss streak.
  *
- * Caller must validate strict adjacency (challenger.position === decliner.position + 1)
- * before calling this.
+ * Caller must validate that the challenge is legal (see canChallenge in crp.js):
+ * same division and decliner ranked above challenger.
  *
  * @param {object} db
  * @param {{ challengerId: string, declinerId: string,
@@ -188,10 +190,11 @@ export async function finalizeMatch(db, params, winnerStanding, loserStanding, a
  *           recordedBy: string }} params
  * @param {object} challengerStanding - lower-ranked team's standings doc
  * @param {object} declinerStanding   - higher-ranked team's standings doc
+ * @param {Array} allStandings - all standings docs (for position shift calculation)
  * @returns {Promise<{challengerCRP: number, declinerCRP: number,
  *                    newChallengerPos: number, newDeclinerPos: number}>}
  */
-export async function finalizeDecline(db, params, challengerStanding, declinerStanding) {
+export async function finalizeDecline(db, params, challengerStanding, declinerStanding, allStandings) {
   const { challengerId, declinerId, challengerName, declinerName, recordedBy } = params;
 
   const c = calcDeclineCRP(challengerStanding, declinerStanding);
@@ -218,11 +221,19 @@ export async function finalizeDecline(db, params, challengerStanding, declinerSt
     notes: 'Challenge declined',
   });
 
-  // Position swap — adjacency was validated upstream, so just swap the two slots.
+  // Position shift — challenger jumps to decliner's slot; decliner and every
+  // team strictly between cPos and dPos shift down by 1. Mirrors finalizeMatch.
   const cPos = challengerStanding.position;
   const dPos = declinerStanding.position;
   const newChallengerPos = dPos;
   const newDeclinerPos = dPos + 1;
+
+  allStandings.forEach(s => {
+    if (s.id !== challengerId && s.position != null && s.position >= dPos && s.position < cPos) {
+      const ref = doc(db, 'standings', s.id);
+      batch.update(ref, { position: s.position + 1, rank: s.position + 1 });
+    }
+  });
 
   // Challenger: W++, CRP+, position swap, streak counters UNCHANGED, mapWins UNCHANGED.
   const challengerWins = (challengerStanding.wins || 0) + 1;

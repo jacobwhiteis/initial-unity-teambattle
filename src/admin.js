@@ -5,7 +5,7 @@ import {
   setDoc, updateDoc, deleteDoc, addDoc, writeBatch, Timestamp,
   signInWithPopup, getAdditionalUserInfo, onAuthStateChanged, signOut
 } from './firebase.js';
-import { getTier, getRules, calcCRP, calcDeclineCRP } from './crp.js';
+import { getTier, getRules, calcCRP, calcDeclineCRP, canChallenge } from './crp.js';
 import { finalizeMatch, finalizeDecline } from './finalize.js';
 import { postToDiscord, battleCreatedMessage, declineFinalizedMessage, clearWebhookCache } from './discord.js';
 import { sortRoster } from './roster.js';
@@ -868,7 +868,7 @@ function onDeclineSelectionChange() {
   const infoBox = document.getElementById('decline-info-box');
   const prevEl = document.getElementById('decline-preview');
 
-  const baseInfo = "A decline means the higher-ranked team refused a challenge from the team directly below them. The challenger auto-moves up. Half CRP, no bonuses, W/L counts; the decliner's winstreak is broken.";
+  const baseInfo = "A decline means the higher-ranked team refused a challenge from a team ranked below them in the same division. The challenger auto-moves up to the decliner's slot; teams between shift down. Half CRP, no bonuses, W/L counts; the decliner's winstreak is broken.";
 
   if (!challengerId || !declinerId) {
     prevEl.style.display = 'none';
@@ -897,9 +897,13 @@ function onDeclineSelectionChange() {
     infoBox.innerHTML = '⚠ Both teams must be ranked (have a position).';
     return;
   }
-  if (cPos !== dPos + 1) {
+  if (!canChallenge(cPos, dPos)) {
     prevEl.style.display = 'none';
-    infoBox.innerHTML = `⚠ Adjacency required: challenger must be exactly one position below decliner. Currently challenger is #${cPos}, decliner is #${dPos}.`;
+    if (getTier(cPos) !== getTier(dPos)) {
+      infoBox.innerHTML = `⚠ Cross-division challenges aren't allowed. Challenger is in ${getTier(cPos)}, decliner is in ${getTier(dPos)}.`;
+    } else {
+      infoBox.innerHTML = `⚠ Challenger #${cPos} is not below decliner #${dPos}. A challenger must be ranked lower than the decliner (within the same division).`;
+    }
     return;
   }
 
@@ -909,7 +913,9 @@ function onDeclineSelectionChange() {
   rows += `<div class="crp-div"></div><div class="crp-row"><span><b>→ ${cTeam.name} total</b></span><span class="cv">+${c.challengerTotal}</span></div><div class="crp-div"></div>`;
   rows += `<div class="crp-row"><span>${dTeam.name} loses (50% of #${cPos}'s loss value)</span><span class="cv">+${c.declinerTotal}</span></div>`;
   rows += `<div class="crp-div"></div><div class="crp-row"><span><b>→ ${dTeam.name} total</b></span><span class="cv">+${c.declinerTotal}</span></div>`;
-  rows += `<div class="crp-div"></div><div class="crp-row" style="color:var(--accent)"><span>📈 ${cTeam.name} moves to #${dPos} · ${dTeam.name} drops to #${dPos + 1}</span><span></span></div>`;
+  const between = cPos - dPos - 1;
+  const shiftNote = between > 0 ? ` · ${between} team${between === 1 ? '' : 's'} between shift down 1` : '';
+  rows += `<div class="crp-div"></div><div class="crp-row" style="color:var(--accent)"><span>📈 ${cTeam.name} #${cPos} → #${dPos} · ${dTeam.name} #${dPos} → #${dPos + 1}${shiftNote}</span><span></span></div>`;
   const streakNote = (dStanding.streak || 0) > 0
     ? `${dTeam.name}'s ${dStanding.streak}-win streak ends. Challenger streak unchanged. No home or streak bonuses.`
     : `${dTeam.name}'s loss streak extends. Challenger streak unchanged. No home or streak bonuses.`;
@@ -936,12 +942,18 @@ async function logDecline() {
   const cPos = cStanding.position;
   const dPos = dStanding.position;
   if (cPos == null || dPos == null) { toast('Both teams must be ranked', true); return; }
-  if (cPos !== dPos + 1) {
-    toast(`Adjacency required: challenger #${cPos} is not directly below decliner #${dPos}`, true);
+  if (!canChallenge(cPos, dPos)) {
+    if (getTier(cPos) !== getTier(dPos)) {
+      toast(`Cross-division challenges aren't allowed (${getTier(cPos)} vs ${getTier(dPos)})`, true);
+    } else {
+      toast(`Challenger #${cPos} must be ranked below decliner #${dPos}`, true);
+    }
     return;
   }
 
-  if (!confirm(`Log decline: ${dTeam.name} declined challenge from ${cTeam.name}? ${cTeam.name} will move to #${dPos}.`)) return;
+  const between = cPos - dPos - 1;
+  const shiftMsg = between > 0 ? ` (${between} team${between === 1 ? '' : 's'} between will shift down)` : '';
+  if (!confirm(`Log decline: ${dTeam.name} declined challenge from ${cTeam.name}? ${cTeam.name} will move from #${cPos} to #${dPos}${shiftMsg}.`)) return;
 
   try {
     const result = await finalizeDecline(db, {
@@ -950,7 +962,7 @@ async function logDecline() {
       challengerName: cTeam.name,
       declinerName: dTeam.name,
       recordedBy: currentUser.uid,
-    }, cStanding, dStanding);
+    }, cStanding, dStanding, standingsCache);
 
     toast(`Decline logged: ${cTeam.name} +${result.challengerCRP} / ${dTeam.name} +${result.declinerCRP} CRP · ${cTeam.name} moved to #${result.newChallengerPos}`);
 
@@ -958,7 +970,7 @@ async function logDecline() {
     document.getElementById('d-challenger').value = '';
     document.getElementById('d-decliner').value = '';
     document.getElementById('decline-preview').style.display = 'none';
-    document.getElementById('decline-info-box').innerHTML = "A decline means the higher-ranked team refused a challenge from the team directly below them. The challenger auto-moves up. Half CRP, no bonuses, W/L counts; the decliner's winstreak is broken.";
+    document.getElementById('decline-info-box').innerHTML = "A decline means the higher-ranked team refused a challenge from a team ranked below them in the same division. The challenger auto-moves up to the decliner's slot; teams between shift down. Half CRP, no bonuses, W/L counts; the decliner's winstreak is broken.";
     loadMatchesForDelete();
 
     // Discord webhook (no-op if not configured)
