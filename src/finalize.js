@@ -89,12 +89,19 @@ export async function finalizeMatch(db, params, winnerStanding, loserStanding, a
   let newLoserPos = lPos;
   let positionShifted = false;
 
-  if (wPos != null && lPos != null && wPos > lPos) {
-    // Lower-ranked beats higher-ranked: winner takes loser's position
-    // Everyone between shifts down by 1
+  if (lPos != null && (wPos == null || wPos > lPos)) {
+    // Upset (lower-ranked beats higher-ranked) OR unranked winner beats a
+    // ranked loser: winner takes loser's slot. Loser and every team strictly
+    // between lPos and wPos shift down by 1. An unranked winner is treated
+    // as wPos = +infinity, so every ranked team at/below lPos shifts down.
     positionShifted = true;
     allStandings.forEach(s => {
-      if (s.id !== winnerId && s.position != null && s.position >= lPos && s.position < wPos) {
+      if (
+        s.id !== winnerId &&
+        s.position != null &&
+        s.position >= lPos &&
+        (wPos == null || s.position < wPos)
+      ) {
         const ref = doc(db, 'standings', s.id);
         batch.update(ref, { position: s.position + 1, rank: s.position + 1 });
       }
