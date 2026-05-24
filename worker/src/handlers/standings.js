@@ -4,7 +4,8 @@ import { createFirestoreClient } from '../lib/firestore.js';
 export async function handleStandings(interaction, env) {
   const db = createFirestoreClient(env);
 
-  const all = await db.listDocuments('standings');
+  // Deactivated teams never appear in standings (missing active = active).
+  const all = (await db.listDocuments('standings')).filter(t => t.active !== false);
 
   const ranked = all
     .filter(t => t.position != null)

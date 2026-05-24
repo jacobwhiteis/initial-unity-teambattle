@@ -45,6 +45,69 @@ export function canChallenge(challengerPos, declinerPos) {
 }
 
 // ---------------------------------------------------------------------------
+// Ladder integrity
+//
+// The ranked ladder must always occupy contiguous slots 1..N with no gaps and
+// no duplicates. Rather than re-derive that invariant in every operation that
+// touches positions (delete, deactivate, unrank, manual set, match finalize),
+// run the result through these helpers. A team is "ranked" when its position
+// is a positive number; null/0/undefined means unranked.
+// ---------------------------------------------------------------------------
+
+/**
+ * Stable ascending order of the ranked teams in `standings`. Ties (duplicate
+ * positions) break by id so the result is deterministic.
+ * @param {Array<{id: string, position: number|null}>} standings
+ * @returns {Array} the ranked subset, sorted
+ */
+function rankedSorted(standings) {
+  return standings
+    .filter(s => s.position != null && s.position > 0)
+    .sort((a, b) => (a.position - b.position) || String(a.id).localeCompare(String(b.id)));
+}
+
+/**
+ * Compute the position writes needed to collapse the ladder to contiguous
+ * 1..N, preserving current relative order. Closes gaps and resolves duplicates.
+ * @param {Array<{id: string, position: number|null}>} standings - the full set
+ *   AFTER any caller mutation (e.g. with a removed team filtered out, or a
+ *   team's position already set to null).
+ * @returns {Array<{id: string, position: number}>} only the entries that change
+ */
+export function resequencePositions(standings) {
+  const updates = [];
+  rankedSorted(standings).forEach((s, i) => {
+    const pos = i + 1;
+    if (s.position !== pos) updates.push({ id: s.id, position: pos });
+  });
+  return updates;
+}
+
+/**
+ * Compute the position writes needed to place `teamId` at `desiredPos`, pushing
+ * the teams at/after that slot down, then collapsing to contiguous 1..N. Works
+ * whether the team was previously ranked or unranked. `desiredPos` is clamped
+ * to [1, N+1] so it can never leave a gap.
+ * @param {Array<{id: string, position: number|null}>} standings - the full set
+ * @param {string} teamId
+ * @param {number} desiredPos - 1-based target slot
+ * @returns {Array<{id: string, position: number}>} only the entries that change
+ */
+export function positionsForInsert(standings, teamId, desiredPos) {
+  const others = rankedSorted(standings).filter(s => s.id !== teamId);
+  const idx = Math.max(0, Math.min(others.length, Math.round(desiredPos) - 1));
+  const ordered = [...others.slice(0, idx), { id: teamId }, ...others.slice(idx)];
+
+  const updates = [];
+  ordered.forEach((s, i) => {
+    const pos = i + 1;
+    const cur = standings.find(x => x.id === s.id);
+    if (!cur || cur.position !== pos) updates.push({ id: s.id, position: pos });
+  });
+  return updates;
+}
+
+// ---------------------------------------------------------------------------
 // Position-based CRP value tables
 // ---------------------------------------------------------------------------
 

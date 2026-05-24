@@ -203,7 +203,11 @@ function toggleExpand(tbody, tr, expTr, team, mode) {
 
 const standingsQuery = query(collection(db, 'standings'), orderBy('rank', 'asc'));
 onSnapshot(standingsQuery, (snapshot) => {
-  currentStandings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  // Deactivated teams never appear on any leaderboard (active mirrored from the
+  // teams doc; missing = active, matching the convention elsewhere).
+  currentStandings = snapshot.docs
+    .map(doc => ({ id: doc.id, ...doc.data() }))
+    .filter(t => t.active !== false);
   renderBoard(sortStandings(currentStandings, currentMode), currentMode);
 });
 

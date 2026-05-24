@@ -47,7 +47,7 @@ export async function handleCreateTeam(interaction, env) {
       roster: [], createdAt: Date.now(),
     }),
     db.buildUpdate('standings', id, {
-      teamName: name, teamTag: tag,
+      teamName: name, teamTag: tag, active: true,
       wins: 0, losses: 0, mapWins: 0, mapLosses: 0, winRate: 0,
       streak: 0, rank: null,
       crp: 0, position: null, consecutive_wins: 0,

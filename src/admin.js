@@ -5,7 +5,7 @@ import {
   setDoc, updateDoc, deleteDoc, addDoc, writeBatch, Timestamp,
   signInWithPopup, getAdditionalUserInfo, onAuthStateChanged, signOut
 } from './firebase.js';
-import { getTier, getRules, calcCRP, calcDeclineCRP, canChallenge } from './crp.js';
+import { getTier, getRules, calcCRP, calcDeclineCRP, canChallenge, resequencePositions, positionsForInsert } from './crp.js';
 import { finalizeMatch, finalizeDecline } from './finalize.js';
 import { postToDiscord, battleCreatedMessage, declineFinalizedMessage, clearWebhookCache } from './discord.js';
 import { sortRoster } from './roster.js';
@@ -631,6 +631,14 @@ async function setCrpOverride() {
   }
 }
 
+// Queue a list of {id, position} position writes (from crp.js ladder helpers)
+// onto an existing batch. Keeps `rank` in lockstep with `position`.
+function queuePositionUpdates(batch, updates) {
+  for (const u of updates) {
+    batch.update(doc(db, 'standings', u.id), { position: u.position, rank: u.position });
+  }
+}
+
 async function setPositionOverride() {
   if (staffRole !== 'admin') { toast('Admin access required', true); return; }
   const teamId = document.getElementById('t-editing').value;
@@ -638,7 +646,11 @@ async function setPositionOverride() {
   const position = parseInt(document.getElementById('t-position').value);
   if (isNaN(position) || position < 1) { toast('Enter a valid position (1 or higher)', true); return; }
   try {
-    await updateDoc(doc(db, 'standings', teamId), { position, rank: position });
+    // Insert at the requested slot, push others down, then collapse to 1..N so
+    // the move can never leave a gap or a duplicate.
+    const batch = writeBatch(db);
+    queuePositionUpdates(batch, positionsForInsert(standingsCache, teamId, position));
+    await batch.commit();
     toast(`Position set to #${position}`);
   } catch (e) {
     toast('Failed to set position: ' + e.message, true);
@@ -650,7 +662,12 @@ async function setUnrankedOverride() {
   const teamId = document.getElementById('t-editing').value;
   if (!teamId) { toast('Select a team to edit first', true); return; }
   try {
-    await updateDoc(doc(db, 'standings', teamId), { position: null, rank: null });
+    // Drop the team off the ladder, then close the gap it leaves behind.
+    const batch = writeBatch(db);
+    batch.update(doc(db, 'standings', teamId), { position: null, rank: null });
+    const remaining = standingsCache.map(s => s.id === teamId ? { ...s, position: null } : s);
+    queuePositionUpdates(batch, resequencePositions(remaining));
+    await batch.commit();
     document.getElementById('t-position').value = '';
     toast('Team set to Unranked');
   } catch (e) {
@@ -703,7 +720,18 @@ async function saveTeam() {
     const teamRef = doc(db, 'teams', editingId);
     batch.update(teamRef, { name, tag, captainDiscordId: captain, active });
     const standingRef = doc(db, 'standings', editingId);
-    batch.update(standingRef, { teamName: name, teamTag: tag });
+    const standingUpdate = { teamName: name, teamTag: tag, active };
+
+    // Deactivating a ranked team pulls it off the ladder; close the gap behind it.
+    const current = standingsCache.find(s => s.id === editingId);
+    const wasRanked = current && current.position != null && current.position > 0;
+    if (!active && wasRanked) {
+      standingUpdate.position = null;
+      standingUpdate.rank = null;
+      const remaining = standingsCache.map(s => s.id === editingId ? { ...s, position: null } : s);
+      queuePositionUpdates(batch, resequencePositions(remaining));
+    }
+    batch.update(standingRef, standingUpdate);
   } else {
     const id = tag.toLowerCase();
     const teamRef = doc(db, 'teams', id);
@@ -713,7 +741,7 @@ async function saveTeam() {
     });
     const standingRef = doc(db, 'standings', id);
     batch.set(standingRef, {
-      teamName: name, teamTag: tag,
+      teamName: name, teamTag: tag, active,
       wins: 0, losses: 0, mapWins: 0, mapLosses: 0, winRate: 0,
       streak: 0, rank: standingsCache.length + 1,
       crp: 0, position: null, consecutive_wins: 0,
@@ -995,23 +1023,15 @@ function deleteTeamAction() {
   const confirm = document.getElementById('del-team-confirm').value.trim();
   if (confirm !== team.name) { toast(`Type "${team.name}" to confirm`, true); return; }
 
-  const deletedStanding = standingsCache.find(s => s.id === teamId);
-  const deletedPos = deletedStanding?.position;
-
   const batch = writeBatch(db);
   batch.delete(doc(db, 'teams', teamId));
   batch.delete(doc(db, 'standings', teamId));
   for (const driver of (team.roster || [])) {
     if (driver.discordId) batch.delete(doc(db, 'drivers', driver.discordId));
   }
-  // Close the leaderboard gap: shift every ranked team below the deleted slot up by 1
-  if (deletedPos != null) {
-    standingsCache.forEach(s => {
-      if (s.id !== teamId && s.position != null && s.position > deletedPos) {
-        batch.update(doc(db, 'standings', s.id), { position: s.position - 1, rank: s.position - 1 });
-      }
-    });
-  }
+  // Close the leaderboard gap: re-sequence the surviving teams to contiguous 1..N.
+  const remaining = standingsCache.filter(s => s.id !== teamId);
+  queuePositionUpdates(batch, resequencePositions(remaining));
   batch.commit()
     .then(() => { toast('Team deleted'); document.getElementById('del-team-confirm').value = ''; })
     .catch(e => toast('Delete failed: ' + e.message, true));
