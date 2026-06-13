@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battle History — Initial Unity: Reborn</title>
+    <link rel="stylesheet" href="/src/styles/global.css">
+</head>
+<body>
+    <nav class="site-nav">
+        <div class="nav-inner">
+            <a href="/" class="nav-logo">
+                <img src="/img/logo.png" alt="" class="nav-logo-img">
+                <span>IU</span> Team Battles
+            </a>
+            <ul class="nav-links">
+                <li><a href="/">Leaderboard</a></li>
+                <li><a href="https://initialunityreborn.com" target="_blank">Main Site</a></li>
+            </ul>
+            <button class="nav-toggle" id="navToggle">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+    <div class="nav-mobile-overlay" id="mobileMenu">
+        <a href="/">Leaderboard</a>
+        <a href="https://initialunityreborn.com" target="_blank">Main Site</a>
+    </div>
+
+    <main class="content-section">
+        <section class="page-header">
+            <h1 class="page-title">Battle History</h1>
+            <p class="page-sub">Every completed team battle this season · Click a battle for details</p>
+        </section>
+
+        <div id="matchesContainer" style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="loading-spinner"></div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-brand">Initial Unity<span>:</span> Reborn</div>
+            <div class="footer-copy">Fan-made racing game inspired by Initial D</div>
+        </div>
+    </footer>
+
+    <script type="module" src="/src/matches.js"></script>
+</body>
+</html>
